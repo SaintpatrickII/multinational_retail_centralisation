@@ -20,3 +20,23 @@ class DatabaseConnector:
         USER = self.data['RDS_USER']
         DATABASE = self.data['RDS_DATABASE']
         PORT = self.data['RDS_PORT']
+        self.engine = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}")
+        return self.engine
+
+    def list_db_tables(self):
+        inspector = inspect(self.engine)
+        self.table_list = inspector.get_table_names()
+        print(self.table_list)
+        # for column in inspector.get_columns(self.table_list):
+        #     print("Column: %s" % column['name'])
+        return self.table_list
+
+   
+
+
+
+if __name__ == '__main__':
+    db = DatabaseConnector()
+    db.read_db_creds()
+    db.init_db_engine()
+    db.list_db_tables()
