@@ -13,10 +13,10 @@ class DataExtractor:
     def read_rds_table(self, connector, table_name):
         connector.read_db_creds()
         engine = connector.init_db_engine()
-        db_tables = engine.list_db_tables()
+        db_tables = connector.list_db_tables()
         if table_name in db_tables:
-            users = pd.read_sql_table(table_name)
-            print((users))
+            users = pd.read_sql_table(table_name, engine)
+            # print((users))
             return users
         else:
             print('Invalid Table')
