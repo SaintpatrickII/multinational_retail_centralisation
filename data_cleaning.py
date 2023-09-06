@@ -16,7 +16,7 @@ class DataCleaning:
         self.table = table
         self.table['address'] = self.table['address'].replace('\n', ' ')
         print(table.info())
-        print(table)
+        print(table.head(50))
 
         return table
 
