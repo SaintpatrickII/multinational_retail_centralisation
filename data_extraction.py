@@ -22,7 +22,7 @@ class DataExtractor:
         # engine = self.engine
         inspector = inspect(engine)
         self.table_list = inspector.get_table_names()
-        print(self.table_list)
+        # print(self.table_list)
         # for column in inspector.get_columns(self.table_list):
         #     print("Column: %s" % column['name'])
         return self.table_list
@@ -33,12 +33,12 @@ class DataExtractor:
         # connector.read_db_creds()
         # engine = self.engine.init_db_engine(creds=CLOUD_CREDS)
         db_tables = self.list_db_tables(engine=engine)
-        print('*'*10)
+        # print('*'*10)
         if table_name in db_tables:
-            users = pd.read_sql_table(table_name, con=con)
+            pd_users = pd.read_sql_table(table_name, con=con)
             # print(table_name)
-            print((users))
-            return
+            # print(pd_users)
+            return pd_users
         else:
             print('Invalid Table')
         
