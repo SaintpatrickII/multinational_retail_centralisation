@@ -1,35 +1,44 @@
-from sqlalchemy import create_engine, inspect
+import os
 import yaml 
-import pandas as pd
 import tabula
 import requests
 import boto3
+import pandas as pd
 from Database_utils import DatabaseConnector
+from sqlalchemy import create_engine, inspect
+from decouple import config
+
+CLOUD_CREDS = config('CLOUD_YAML')
+
 
 class DataExtractor:
     def __init__(self) -> None:
+        # self.engine = engine
+        # self.list_db_tables(engine)
+        # self.read_rds_table(table_name, engine=self.engine)
         pass
 
-    def read_rds_table(self, connector, table_name):
-        """
-        The function reads a table from a relational database and returns the data as a pandas DataFrame
-        if the table exists, otherwise it prints an error message.
-        
-        :param connector: The `connector` parameter is an object that is responsible for connecting to
-        the database and performing database operations. It should have methods like `read_db_creds()`
-        to read the database credentials, `init_db_engine()` to initialize the database engine, and
-        `list_db_tables()` to list all the tables
-        :param table_name: The `table_name` parameter is the name of the table in the database that you
-        want to read
-        :return: the data from the specified table in the form of a pandas DataFrame.
-        """
-        connector.read_db_creds()
-        engine = connector.init_db_engine()
-        db_tables = connector.list_db_tables()
+    def list_db_tables(self, engine):
+        # engine = self.engine
+        inspector = inspect(engine)
+        self.table_list = inspector.get_table_names()
+        print(self.table_list)
+        # for column in inspector.get_columns(self.table_list):
+        #     print("Column: %s" % column['name'])
+        return self.table_list
+
+
+    def read_rds_table(self, engine, table_name: pd.DataFrame):
+        con = engine
+        # connector.read_db_creds()
+        # engine = self.engine.init_db_engine(creds=CLOUD_CREDS)
+        db_tables = self.list_db_tables(engine=engine)
+        print('*'*10)
         if table_name in db_tables:
-            users = pd.read_sql_table(table_name, engine)
+            users = pd.read_sql_table(table_name, con=con)
+            # print(table_name)
             print((users))
-            return users
+            return
         else:
             print('Invalid Table')
         
@@ -41,5 +50,10 @@ class DataExtractor:
 
 if __name__ == '__main__':
     db = DatabaseConnector()
+    formatted_creds = db.read_db_creds(creds=CLOUD_CREDS)
+    engine = db.init_db_engine(formatted_creds)
     de = DataExtractor()
-    de.read_rds_table(db, table_name='legacy_users')
+    de.list_db_tables(engine=engine)
+    de.read_rds_table(engine=engine, table_name='legacy_users')
+    # de.read_rds_table(table_name='legacy_users')
+    # engine=db, table_name='legacy_users'
