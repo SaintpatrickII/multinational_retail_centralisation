@@ -37,7 +37,7 @@ class DataExtractor:
         if table_name in db_tables:
             pd_users = pd.read_sql_table(table_name, con=con)
             # print(table_name)
-            # print(pd_users)
+            print(pd_users)
             return pd_users
         else:
             print('Invalid Table')
@@ -49,11 +49,11 @@ class DataExtractor:
 
 
 if __name__ == '__main__':
-    db = DatabaseConnector()
-    formatted_creds = db.read_db_creds(creds=CLOUD_CREDS)
-    engine = db.init_db_engine(formatted_creds)
+    db = DatabaseConnector(creds=CLOUD_CREDS)
+    # formatted_creds = db.read_db_creds(creds=CLOUD_CREDS)
+    # engine = db.init_db_engine(formatted_creds)
     de = DataExtractor()
-    de.list_db_tables(engine=engine)
-    de.read_rds_table(engine=engine, table_name='legacy_users')
+    de.list_db_tables(engine=db.engine)
+    de.read_rds_table(engine=db.engine, table_name='legacy_users')
     # de.read_rds_table(table_name='legacy_users')
     # engine=db, table_name='legacy_users'
