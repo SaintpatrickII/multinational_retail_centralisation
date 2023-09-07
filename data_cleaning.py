@@ -49,6 +49,28 @@ class DataCleaning:
 
         return users_table
 
+    
+    def clean_card_data(self, card_data: pd.DataFrame):
+        cards = card_data
+        print(cards.info())
+
+        # cards table has no index, lets fix that
+        # index = [row for row in range(0, len(cards))]
+        # cards['index'] = index
+
+        # cards = cards[cards.card_number != 'NULL']
+        # cards['card_number'] = cards['card_number'].astype('string')     
+        # cards['card_providerr'] = cards['card_number'].astype('string')     
+        # cards = cards[cards.expiry_date != len(5)]
+        # cards = cards[cards.date_payment_confirmed != len(10)]
+        # print(cards.info())
+
+        # cards = cards.drop_duplicates()
+        # cards = cards.dropna()
+        # cards.loc[:,'expiry_date'] = \
+        # cards.loc[:,'expiry_date'].apply(pd.to_datetime, format='%m/%y')
+        # # print(cards.head(100))
+
 
 
 
@@ -72,12 +94,10 @@ class CleaningHelperFunctions:
 if __name__ == '__main__':
     dc = DataCleaning()
     db = DatabaseConnector(creds=CLOUD_CREDS)
-    # formatted_creds = db.read_db_creds(creds=CLOUD_CREDS)
-    # engine = db.init_db_engine(formatted_creds)
     de = DataExtractor()
     hf = CleaningHelperFunctions()
-    raw_table = de.read_rds_table(engine=db.engine, table_name='legacy_users')
-    # print(raw_table)
-    cleaned_res = dc.clean_user_data(raw_table)
-    # local_creds = db.read_db_creds(creds=LOCAL_CREDS)
-    db.upload_to_db(cleaned_dataframe=cleaned_res, table_name='dim_users', creds=LOCAL_CREDS)
+    # raw_table = de.read_rds_table(engine=db.engine, table_name='legacy_users')
+    # cleaned_res = dc.clean_user_data(raw_table)
+    # db.upload_to_db(cleaned_dataframe=cleaned_res, table_name='dim_users', creds=LOCAL_CREDS)
+    card_raw = de.retrieve_pdf_data(filepath='https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf')
+    dc.clean_card_data(card_data=card_raw)

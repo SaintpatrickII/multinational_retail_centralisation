@@ -1,3 +1,4 @@
+# %%
 import os
 import yaml 
 import tabula
@@ -37,11 +38,16 @@ class DataExtractor:
         if table_name in db_tables:
             pd_users = pd.read_sql_table(table_name, con=con)
             # print(table_name)
-            print(pd_users)
+            # print(pd_users)
             return pd_users
         else:
             print('Invalid Table')
         
+    def retrieve_pdf_data(self, filepath: str):
+        cc_df = tabula.read_pdf(filepath, stream=False, pages='all')
+        cc_df = pd.concat(cc_df)
+        print(cc_df.head(100))
+        return cc_df
 
 
 
@@ -55,5 +61,6 @@ if __name__ == '__main__':
     de = DataExtractor()
     de.list_db_tables(engine=db.engine)
     de.read_rds_table(engine=db.engine, table_name='legacy_users')
+    de.retrieve_pdf_data(filepath='https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf')
     # de.read_rds_table(table_name='legacy_users')
     # engine=db, table_name='legacy_users'
