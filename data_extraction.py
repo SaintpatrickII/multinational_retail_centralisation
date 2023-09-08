@@ -76,7 +76,9 @@ class DataExtractor:
             print(f'store number {store} proccessing')
             response = requests.get(f'{api_endpoint}{store}', headers=true_header).json()
             curr_stores.append(pd.DataFrame(response,index=[np.NaN]))
-        return curr_stores
+        curr_stores_df = pd.concat(curr_stores)
+        print(f'stores loaded into dataframe with {len(curr_stores_df)} rows :)')
+        return curr_stores_df
 
 
 
