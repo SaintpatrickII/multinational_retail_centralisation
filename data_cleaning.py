@@ -38,10 +38,6 @@ class DataCleaning:
         
         date_cols = ['date_of_birth','join_date']
         users_table = hf.datetime_transform(date_cols, users_table)
-        # for date_col in date_cols:
-        #     users_table.loc[:,date_col] = users_table.loc[:,date_col].apply(pd.to_datetime, 
-        #                                     infer_datetime_format=True, 
-        #                                     errors='coerce')
         users_table.drop_duplicates()
         users_table.dropna()
         print(table.info())
@@ -52,25 +48,40 @@ class DataCleaning:
     
     def clean_card_data(self, card_data: pd.DataFrame):
         cards = card_data
-        print(cards.info())
-
-        # cards table has no index, lets fix that
-        # index = [row for row in range(0, len(cards))]
-        # cards['index'] = index
-
-        # cards = cards[cards.card_number != 'NULL']
-        # cards['card_number'] = cards['card_number'].astype('string')     
-        # cards['card_providerr'] = cards['card_number'].astype('string')     
-        # cards = cards[cards.expiry_date != len(5)]
-        # cards = cards[cards.date_payment_confirmed != len(10)]
+        cards = card_data
         # print(cards.info())
 
+        # cards table has no index, lets fix that
+        index = [row for row in range(0, len(cards))] 
+        cards['index'] = index                         # new column
+        cards = cards.set_index(['index'])
+        cards = cards.drop_duplicates()
+        #  remove null
+        cards = cards[cards.card_number != 'NULL']
+        cards = cards.dropna()
+        # enfore datatypes
+        cards['card_number'] = cards['card_number'].astype('str')     
+        cards['card_provider'] = cards['card_provider'].astype('str')     
+        # remove rouge character
+        cards.loc[:,'card_number'] = cards.loc[:,'card_number'].astype('str').apply(lambda x : x.replace('?', ''))
+        # force numeric values
+        cards = cards[cards['card_number'].str.isnumeric()] 
+        # format dates
+        cards.loc[:,'expiry_date'] = \
+        cards.loc[:,'expiry_date'].apply(pd.to_datetime, format='%m/%y', errors='coerce')
+        # cards = cards[cards.card_number != 'NaT']
+        # print(cards[cards.index.duplicated()])
+        cards.loc[:, 'date_payment_confirmed'] = \
+        cards.loc[:,'date_payment_confirmed'].apply(pd.to_datetime,
+                                                                infer_datetime_format=True,
+                                                                errors='coerce')
+        # drop duplicates & NAN                                                        # 
         # cards = cards.drop_duplicates()
         # cards = cards.dropna()
-        # cards.loc[:,'expiry_date'] = \
-        # cards.loc[:,'expiry_date'].apply(pd.to_datetime, format='%m/%y')
-        # # print(cards.head(100))
+        print(cards.head(10))
+        print('Card Cleaning Done!')
 
+        return cards
 
 
 
@@ -100,4 +111,5 @@ if __name__ == '__main__':
     # cleaned_res = dc.clean_user_data(raw_table)
     # db.upload_to_db(cleaned_dataframe=cleaned_res, table_name='dim_users', creds=LOCAL_CREDS)
     card_raw = de.retrieve_pdf_data(filepath='https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf')
-    dc.clean_card_data(card_data=card_raw)
+    cleaned_cards = dc.clean_card_data(card_data=card_raw)
+    db.upload_to_db(cleaned_dataframe=cleaned_cards, table_name='dim_card_details', creds=LOCAL_CREDS)

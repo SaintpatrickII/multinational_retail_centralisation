@@ -1,15 +1,22 @@
 # %%
 import os
+import re
 import yaml 
+import json
 import tabula
 import requests
 import boto3
+import requests
 import pandas as pd
 from Database_utils import DatabaseConnector
 from sqlalchemy import create_engine, inspect
 from decouple import config
 
 CLOUD_CREDS = config('CLOUD_YAML')
+STORE_API = config('STORE_API')
+AWS_STORES = config('AWS_STORES')
+AWS_ALL_STORES = config('AWS_ALL_STORES')
+
 
 
 class DataExtractor:
@@ -46,8 +53,26 @@ class DataExtractor:
     def retrieve_pdf_data(self, filepath: str):
         cc_df = tabula.read_pdf(filepath, stream=False, pages='all')
         cc_df = pd.concat(cc_df)
-        print(cc_df.head(100))
+        # print(cc_df.head(100))
         return cc_df
+
+
+    def list_number_of_stores(self, endpoint: str, header: dict):
+        api_endpoint = endpoint
+        api_header = header
+        true_header = {'x-api-key': api_header}
+        response = requests.get(api_endpoint, headers=true_header).content
+        stores_list = json.loads(response)
+        return stores_list['number_stores']
+
+    def retrieve_stores_data(self, endpoint: str, header: dict):
+        no_of_stores = self.list_number_of_stores(endpoint=AWS_ALL_STORES, header=STORE_API)
+        api_endpoint = endpoint
+        api_header = header
+        true_header = {'x-api-key': api_header}
+        test = 1
+        response = requests.get(f'{api_endpoint}{test}', headers=true_header).json()
+        print(response)
 
 
 
@@ -59,8 +84,10 @@ if __name__ == '__main__':
     # formatted_creds = db.read_db_creds(creds=CLOUD_CREDS)
     # engine = db.init_db_engine(formatted_creds)
     de = DataExtractor()
-    de.list_db_tables(engine=db.engine)
-    de.read_rds_table(engine=db.engine, table_name='legacy_users')
-    de.retrieve_pdf_data(filepath='https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf')
+    # de.list_db_tables(engine=db.engine)
+    # de.read_rds_table(engine=db.engine, table_name='legacy_users')
+    # de.retrieve_pdf_data(filepath='https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf')
+    # de.list_number_of_stores(endpoint=AWS_ALL_STORES, header=STORE_API)
+    de.retrieve_stores_data(endpoint=AWS_STORES, header=STORE_API)
     # de.read_rds_table(table_name='legacy_users')
     # engine=db, table_name='legacy_users'
