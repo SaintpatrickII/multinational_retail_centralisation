@@ -8,6 +8,7 @@ import requests
 import boto3
 import requests
 import pandas as pd
+import numpy as np
 from Database_utils import DatabaseConnector
 from sqlalchemy import create_engine, inspect
 from decouple import config
@@ -66,13 +67,16 @@ class DataExtractor:
         return stores_list['number_stores']
 
     def retrieve_stores_data(self, endpoint: str, header: dict):
+        curr_stores = []
         no_of_stores = self.list_number_of_stores(endpoint=AWS_ALL_STORES, header=STORE_API)
         api_endpoint = endpoint
         api_header = header
         true_header = {'x-api-key': api_header}
-        test = 1
-        response = requests.get(f'{api_endpoint}{test}', headers=true_header).json()
-        print(response)
+        for store in range(0, no_of_stores):
+            print(f'store number {store} proccessing')
+            response = requests.get(f'{api_endpoint}{store}', headers=true_header).json()
+            curr_stores.append(pd.DataFrame(response,index=[np.NaN]))
+        return curr_stores
 
 
 
