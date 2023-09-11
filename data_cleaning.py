@@ -1,6 +1,8 @@
 # %%
 import csv
+from math import prod
 import re
+from tkinter.ttk import Separator
 import yaml 
 import pandas as pd
 import tabula
@@ -22,8 +24,8 @@ class DataCleaning:
     def __init__(self) -> None:
         pass
     
-    def clean_user_data(self, table: pd.DataFrame):
-        users_table = table
+    def clean_user_data(self, user_data: pd.DataFrame):
+        users_table = user_data
         print(len(users_table))
         users_table.drop_duplicates()
         # print(users_table['country_code'].unique())
@@ -45,8 +47,8 @@ class DataCleaning:
         users_table = hf.datetime_transform(date_cols, users_table)
         users_table.drop_duplicates()
         users_table.dropna()
-        print(table.info())
-        print(table.head(20))
+        print(users_table.info())
+        print(users_table.head(20))
 
         return users_table
 
@@ -82,7 +84,7 @@ class DataCleaning:
     def clean_store_data(self, store_data: pd.DataFrame):
         print('Cleaning Store Dataframe')
         stores = store_data
-        stores = stores.iloc[:, 1:] #remove dummy index
+        # stores = stores.iloc[:, 1:] #remove dummy index
         index = [row for row in range(0, len(stores))] 
         stores['index'] = index                         # new column
         stores = stores.set_index(['index'])
@@ -103,6 +105,18 @@ class DataCleaning:
         print(len(stores))
         print('Store Dataframe Cleaned')
         return stores
+
+
+    def convert_product_weights(self, product_data: str):
+        products = pd.read_csv(product_data)
+        products.loc[:, 'product_price'] = products['product_price'].astype('str').apply(lambda x : x.replace('£', ''))
+        products.loc[:,'weight'] = products['weight'].astype('str').apply(lambda x : hf.g_to_kg(x))
+        products.loc[:,'weight'] = products['weight'].astype('str').apply(lambda x : hf.ml_to_kg(x))
+
+        print(products.head())
+        return products
+
+        
 
 
 class CleaningHelperFunctions:
@@ -129,6 +143,39 @@ class CleaningHelperFunctions:
         temp_list = df[column].tolist()
         print(set(temp_list))
 
+    def g_to_kg(self, weight_string: str):
+        weight_to_convert = weight_string.replace('.', '')
+        if weight_to_convert[-1] == 'g' and weight_to_convert[-2] != 'k':
+            # weight_to_convert == weight_to_convert[:-1]
+            try:
+                # print(weight_to_convert[:-1])
+                weight_to_convert = int(float(weight_to_convert[:-1])/1000)
+            except ValueError:
+                self.get_rid_of_damn_x(weight_to_convert) 
+                
+        return weight_to_convert
+
+    def ml_to_kg(self, weight_string: str):
+        weight_to_convert = weight_string.replace('.', '')
+        if weight_to_convert[-2:]== 'ml':
+            # weight_to_convert = weight_string
+            # print(weight_to_convert[:-2])
+            weight_to_convert = int(float(weight_to_convert[:-2])/1000)
+        return weight_to_convert
+
+    def oz_to_kg(self, weight_string: str):
+        pass
+
+    def get_rid_of_damn_x(self, weight_string: str):
+        x_string = weight_string
+        x_string.replace(' x ', ' ')
+        x_string = x_string[:-1]
+        # print(x_string)
+        x_string = x_string.split(sep=' ')
+        # print(x_string[0])
+        # print(x_string[2])
+        return int(float(x_string[0]) * float(x_string[2]))
+
 
 
 
@@ -149,6 +196,10 @@ if __name__ == '__main__':
     # db.upload_to_db(cleaned_dataframe=cleaned_cards, table_name='dim_card_details', creds=LOCAL_CREDS)
 
     # stores cleaning
-    raw_stores = de.retrieve_stores_data(endpoint=AWS_STORES, header=STORE_API)
-    cleaned_stores = dc.clean_store_data(store_data=raw_stores)
-    db.upload_to_db(cleaned_dataframe=cleaned_stores, table_name='dim_stores_details', creds=LOCAL_CREDS)
+    # stores_raw = de.retrieve_stores_data(endpoint=AWS_STORES, header=STORE_API)
+    # cleaned_stores = dc.clean_store_data(store_data=stores_raw)
+    # db.upload_to_db(cleaned_dataframe=cleaned_stores, table_name='dim_stores_details', creds=LOCAL_CREDS)
+
+    # products cleaning
+    # products_raw = 
+    dc.convert_product_weights('/Users/paddy/Desktop/multinational_retail_centralisation/raw_products.csv')

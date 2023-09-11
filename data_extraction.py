@@ -68,6 +68,7 @@ class DataExtractor:
 
     def retrieve_stores_data(self, endpoint: str, header: dict):
         curr_stores = []
+
         no_of_stores = self.list_number_of_stores(endpoint=AWS_ALL_STORES, header=STORE_API)
         api_endpoint = endpoint
         api_header = header
@@ -80,6 +81,9 @@ class DataExtractor:
         print(f'stores loaded into dataframe with {len(curr_stores_df)} rows :)')
         return curr_stores_df
 
+    def extract_from_s3(self):
+        s3 = boto3.client('s3')
+        s3.download_file('data-handling-public','products.csv', 'raw_products.csv')
 
 
         
@@ -94,7 +98,9 @@ if __name__ == '__main__':
     # de.read_rds_table(engine=db.engine, table_name='legacy_users')
     # de.retrieve_pdf_data(filepath='https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf')
     # de.list_number_of_stores(endpoint=AWS_ALL_STORES, header=STORE_API)
-    raw_stores = de.retrieve_stores_data(endpoint=AWS_STORES, header=STORE_API)
+    # raw_stores = de.retrieve_stores_data(endpoint=AWS_STORES, header=STORE_API)
     # save_df_to_csv = raw_stores.to_csv('test.csv')
     # de.read_rds_table(table_name='legacy_users')
     # engine=db, table_name='legacy_users'
+    de.extract_from_s3()
+
