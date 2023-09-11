@@ -49,8 +49,6 @@ class DataCleaning:
     def clean_card_data(self, card_data: pd.DataFrame):
         cards = card_data
         cards = card_data
-        # print(cards.info())
-
         # cards table has no index, lets fix that
         index = [row for row in range(0, len(cards))] 
         cards['index'] = index                         # new column
@@ -66,18 +64,11 @@ class DataCleaning:
         cards.loc[:,'card_number'] = cards.loc[:,'card_number'].astype('str').apply(lambda x : x.replace('?', ''))
         # force numeric values
         cards = cards[cards['card_number'].str.isnumeric()] 
-        # format dates
-        cards.loc[:,'expiry_date'] = \
-        cards.loc[:,'expiry_date'].apply(pd.to_datetime, format='%m/%y', errors='coerce')
-        # cards = cards[cards.card_number != 'NaT']
-        # print(cards[cards.index.duplicated()])
-        cards.loc[:, 'date_payment_confirmed'] = \
-        cards.loc[:,'date_payment_confirmed'].apply(pd.to_datetime,
-                                                                infer_datetime_format=True,
-                                                                errors='coerce')
-        # drop duplicates & NAN                                                        # 
-        # cards = cards.drop_duplicates()
-        # cards = cards.dropna()
+        # convert dates to correct datetime variables
+        month_year_cols = ['expiry_date']
+        cards = hf.month_year_transform(month_year_cols, cards)
+        date_cols = ['date_payment_confirmed']
+        cards = hf.datetime_transform(date_cols, cards)
         print(cards.head(10))
         print('Card Cleaning Done!')
 
@@ -98,6 +89,13 @@ class CleaningHelperFunctions:
                                             errors='coerce')
         return df
 
+    def month_year_transform(self, columns: list, df: pd.DataFrame):
+        date_cols = columns
+        for date_col in date_cols:
+            df.loc[:,date_col] = df.loc[:,date_col].apply(pd.to_datetime, 
+                                            format='%m/%y', 
+                                            errors='coerce')
+        return df
 
 
 
