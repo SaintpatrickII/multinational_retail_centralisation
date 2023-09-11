@@ -94,6 +94,7 @@ if __name__ == '__main__':
     # de.read_rds_table(engine=db.engine, table_name='legacy_users')
     # de.retrieve_pdf_data(filepath='https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf')
     # de.list_number_of_stores(endpoint=AWS_ALL_STORES, header=STORE_API)
-    de.retrieve_stores_data(endpoint=AWS_STORES, header=STORE_API)
+    raw_stores = de.retrieve_stores_data(endpoint=AWS_STORES, header=STORE_API)
+    # save_df_to_csv = raw_stores.to_csv('test.csv')
     # de.read_rds_table(table_name='legacy_users')
     # engine=db, table_name='legacy_users'

@@ -1,4 +1,6 @@
 # %%
+import csv
+import re
 import yaml 
 import pandas as pd
 import tabula
@@ -12,6 +14,9 @@ from sqlalchemy import create_engine, inspect
 
 CLOUD_CREDS = config('CLOUD_YAML')
 LOCAL_CREDS = config('LOCAL_YAML')
+STORE_API = config('STORE_API')
+AWS_STORES = config('AWS_STORES')
+AWS_ALL_STORES = config('AWS_ALL_STORES')
 
 class DataCleaning:
     def __init__(self) -> None:
@@ -74,7 +79,30 @@ class DataCleaning:
 
         return cards
 
-
+    def clean_store_data(self, store_data: pd.DataFrame):
+        print('Cleaning Store Dataframe')
+        stores = store_data
+        stores = stores.iloc[:, 1:] #remove dummy index
+        index = [row for row in range(0, len(stores))] 
+        stores['index'] = index                         # new column
+        stores = stores.set_index(['index'])
+        stores = stores.drop_duplicates()
+        # get rid of random country_codes
+        stores.loc[:, 'country_code'] = stores.loc[stores['country_code'].isin(['GB', 'US', 'DE'])]
+        stores.loc[:, 'address'] = stores['address'].str.replace('\n', ' ') #remove \n in address
+        stores.loc[:,'staff_numbers'] = stores['staff_numbers'].astype('str').apply(lambda x : re.sub('\D','',x)) #remove letters from staff_numbers
+        # convert datetime
+        datetime_list = ['opening_date']
+        stores = hf.datetime_transform(datetime_list, stores)
+        # hf.column_value_set('continent', stores)
+        stores[['continent']] = stores[['continent']] \
+                                    .apply(lambda x:x.replace('eeEurope','Europe')) \
+                                    .apply(lambda x:x.replace('eeAmerica','America'))
+        hf.column_value_set('continent', stores)
+        print(stores.head())
+        print(len(stores))
+        print('Store Dataframe Cleaned')
+        return stores
 
 
 class CleaningHelperFunctions:
@@ -97,6 +125,10 @@ class CleaningHelperFunctions:
                                             errors='coerce')
         return df
 
+    def column_value_set(self, column: str, df):
+        temp_list = df[column].tolist()
+        print(set(temp_list))
+
 
 
 
@@ -105,9 +137,18 @@ if __name__ == '__main__':
     db = DatabaseConnector(creds=CLOUD_CREDS)
     de = DataExtractor()
     hf = CleaningHelperFunctions()
-    # raw_table = de.read_rds_table(engine=db.engine, table_name='legacy_users')
-    # cleaned_res = dc.clean_user_data(raw_table)
+
+    # users cleaning
+    # users_raw = de.read_rds_table(engine=db.engine, table_name='legacy_users')
+    # cleaned_res = dc.clean_user_data(users_raw)
     # db.upload_to_db(cleaned_dataframe=cleaned_res, table_name='dim_users', creds=LOCAL_CREDS)
-    card_raw = de.retrieve_pdf_data(filepath='https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf')
-    cleaned_cards = dc.clean_card_data(card_data=card_raw)
-    db.upload_to_db(cleaned_dataframe=cleaned_cards, table_name='dim_card_details', creds=LOCAL_CREDS)
+
+    # cards cleaning
+    # card_raw = de.retrieve_pdf_data(filepath='https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf')
+    # cleaned_cards = dc.clean_card_data(card_data=card_raw)
+    # db.upload_to_db(cleaned_dataframe=cleaned_cards, table_name='dim_card_details', creds=LOCAL_CREDS)
+
+    # stores cleaning
+    raw_stores = de.retrieve_stores_data(endpoint=AWS_STORES, header=STORE_API)
+    cleaned_stores = dc.clean_store_data(store_data=raw_stores)
+    db.upload_to_db(cleaned_dataframe=cleaned_stores, table_name='dim_stores_details', creds=LOCAL_CREDS)
