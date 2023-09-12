@@ -1,11 +1,6 @@
 # %%
-from ast import Num, Return
-from cmath import nan
 import csv
-from curses.ascii import isalnum
-from math import prod
 import re
-from tkinter.ttk import Separator
 import yaml 
 import pandas as pd
 import tabula
@@ -171,6 +166,11 @@ class DataCleaning:
         print('products claned :)')
         return products
 
+    def clean_orders_table(self, orders_table: pd.DataFrame):
+        orders = orders_table
+        orders = orders.drop(columns=['first_name','last_name','1','level_0','index']).reindex()
+        print('Orders table cleaned')
+        return orders
         
 
 
@@ -221,6 +221,11 @@ if __name__ == '__main__':
     # db.upload_to_db(cleaned_dataframe=cleaned_stores, table_name='dim_stores_details', creds=LOCAL_CREDS)
 
     # products cleaning
-    products_raw = de.extract_from_s3(bucket=BUCKET_NAME, file_from_s3=S3_FILE)
-    cleaned_products = dc.convert_product_weights(product_data=products_raw)
-    db.upload_to_db(cleaned_dataframe=cleaned_products, table_name='dim_product_details', creds=LOCAL_CREDS)
+    # products_raw = de.extract_from_s3(bucket=BUCKET_NAME, file_from_s3=S3_FILE)
+    # cleaned_products = dc.convert_product_weights(product_data=products_raw)
+    # db.upload_to_db(cleaned_dataframe=cleaned_products, table_name='dim_product_details', creds=LOCAL_CREDS)
+
+    # orders cleaning
+    orders_raw = de.read_rds_table(engine=db.engine, table_name='orders_table')
+    cleaned_orders = dc.clean_orders_table(orders_table=orders_raw)
+    db.upload_to_db(cleaned_dataframe=cleaned_orders, table_name='orders_table', creds=LOCAL_CREDS)
