@@ -1,5 +1,8 @@
 # %%
+from ast import Num, Return
+from cmath import nan
 import csv
+from curses.ascii import isalnum
 from math import prod
 import re
 from tkinter.ttk import Separator
@@ -19,6 +22,8 @@ LOCAL_CREDS = config('LOCAL_YAML')
 STORE_API = config('STORE_API')
 AWS_STORES = config('AWS_STORES')
 AWS_ALL_STORES = config('AWS_ALL_STORES')
+BUCKET_NAME = config('BUCKET_NAME')
+S3_FILE = config('FILE_NAME')
 
 class DataCleaning:
     def __init__(self) -> None:
@@ -107,13 +112,63 @@ class DataCleaning:
         return stores
 
 
-    def convert_product_weights(self, product_data: str):
-        products = pd.read_csv(product_data)
+    def convert_product_weights(self, product_data: pd.DataFrame):
+        products = product_data
         products.loc[:, 'product_price'] = products['product_price'].astype('str').apply(lambda x : x.replace('£', ''))
-        products.loc[:,'weight'] = products['weight'].astype('str').apply(lambda x : hf.g_to_kg(x))
-        products.loc[:,'weight'] = products['weight'].astype('str').apply(lambda x : hf.ml_to_kg(x))
 
-        print(products.head())
+        def correct_format(value):
+            if value[-1].isalnum() is False:
+                wrong_char = value[-1]
+                value= value.replace(wrong_char,'').strip()
+            return value
+        products.loc[:,'weight'] =products.loc[:,'weight'].astype('str').apply(lambda x:correct_format(x))
+
+        def barcode_weights(value: str):
+            if value[0].isalpha() is True or value[1].isalpha() is True:
+                new_value = 'NaN'
+                return new_value
+            else:
+                return value
+        
+        def grams_and_ml(value: str):
+            if value[-1] == 'g' and value[-2].isdigit() and value[:-2].isdigit() or value[-2:] == 'ml':
+                value = value.replace('g','').replace('ml','')
+                value = int(value) /1000
+                return value
+            elif '.' in value and value[-2].isdigit():
+                value = value.replace('.',' ')
+                num1, num2 = value.split(' ')[0], value.split(' ')[1][:-1]
+                str_to_join = ['0.', num1, num2]
+                kg_val = ''.join(str_to_join)
+                return kg_val
+            elif 'kg' in value:
+                return value[:-2]
+            else:
+                return value
+
+        def multiply_values(value):
+            if 'x' in value:
+                value = value.replace(' x ',' ')
+                num1, num2 = value.split(' ')[0], value.split(' ')[1][:-1]
+                new_value = (int(num1) * int(num2)) / 1000
+                return new_value
+            else:
+                return value
+
+        def oz_conversion(value):
+            if 'oz' in value:
+                value = value.replace('oz', '')
+                value = float(value) * 28.3495
+            return value
+
+        products.loc[:, 'weight'] = products.loc[:, 'weight'].astype('str').apply(lambda x : barcode_weights(x))
+        products.loc[:,'weight'] = products.loc[:,'weight'].astype('str').apply(lambda x:grams_and_ml(x))
+        products.loc[:, 'weight'] = products.loc[:,'weight'].astype('str').apply(lambda x : multiply_values(x))
+        products.loc[:,'weight'] = products.loc[:,'weight'].astype('str').apply(lambda x:oz_conversion(x))
+        products.dropna()
+        products.drop_duplicates()
+        products = products[products.weight != 'NaN']
+        print('products claned :)')
         return products
 
         
@@ -143,41 +198,6 @@ class CleaningHelperFunctions:
         temp_list = df[column].tolist()
         print(set(temp_list))
 
-    def g_to_kg(self, weight_string: str):
-        weight_to_convert = weight_string.replace('.', '')
-        if weight_to_convert[-1] == 'g' and weight_to_convert[-2] != 'k':
-            # weight_to_convert == weight_to_convert[:-1]
-            try:
-                # print(weight_to_convert[:-1])
-                weight_to_convert = int(float(weight_to_convert[:-1])/1000)
-            except ValueError:
-                self.get_rid_of_damn_x(weight_to_convert) 
-                
-        return weight_to_convert
-
-    def ml_to_kg(self, weight_string: str):
-        weight_to_convert = weight_string.replace('.', '')
-        if weight_to_convert[-2:]== 'ml':
-            # weight_to_convert = weight_string
-            # print(weight_to_convert[:-2])
-            weight_to_convert = int(float(weight_to_convert[:-2])/1000)
-        return weight_to_convert
-
-    def oz_to_kg(self, weight_string: str):
-        pass
-
-    def get_rid_of_damn_x(self, weight_string: str):
-        x_string = weight_string
-        x_string.replace(' x ', ' ')
-        x_string = x_string[:-1]
-        # print(x_string)
-        x_string = x_string.split(sep=' ')
-        # print(x_string[0])
-        # print(x_string[2])
-        return int(float(x_string[0]) * float(x_string[2]))
-
-
-
 
 if __name__ == '__main__':
     dc = DataCleaning()
@@ -201,5 +221,6 @@ if __name__ == '__main__':
     # db.upload_to_db(cleaned_dataframe=cleaned_stores, table_name='dim_stores_details', creds=LOCAL_CREDS)
 
     # products cleaning
-    # products_raw = 
-    dc.convert_product_weights('/Users/paddy/Desktop/multinational_retail_centralisation/raw_products.csv')
+    products_raw = de.extract_from_s3(bucket=BUCKET_NAME, file_from_s3=S3_FILE)
+    cleaned_products = dc.convert_product_weights(product_data=products_raw)
+    db.upload_to_db(cleaned_dataframe=cleaned_products, table_name='dim_product_details', creds=LOCAL_CREDS)

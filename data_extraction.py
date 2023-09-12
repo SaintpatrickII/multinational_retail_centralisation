@@ -1,4 +1,5 @@
 # %%
+from operator import concat
 import os
 import re
 import yaml 
@@ -9,6 +10,7 @@ import boto3
 import requests
 import pandas as pd
 import numpy as np
+from io import StringIO
 from Database_utils import DatabaseConnector
 from sqlalchemy import create_engine, inspect
 from decouple import config
@@ -17,6 +19,8 @@ CLOUD_CREDS = config('CLOUD_YAML')
 STORE_API = config('STORE_API')
 AWS_STORES = config('AWS_STORES')
 AWS_ALL_STORES = config('AWS_ALL_STORES')
+BUCKET_NAME = config('BUCKET_NAME')
+S3_FILE = config('FILE_NAME')
 
 
 
@@ -68,7 +72,6 @@ class DataExtractor:
 
     def retrieve_stores_data(self, endpoint: str, header: dict):
         curr_stores = []
-
         no_of_stores = self.list_number_of_stores(endpoint=AWS_ALL_STORES, header=STORE_API)
         api_endpoint = endpoint
         api_header = header
@@ -81,9 +84,13 @@ class DataExtractor:
         print(f'stores loaded into dataframe with {len(curr_stores_df)} rows :)')
         return curr_stores_df
 
-    def extract_from_s3(self):
+    def extract_from_s3(self, bucket: str, file_from_s3):
         s3 = boto3.client('s3')
-        s3.download_file('data-handling-public','products.csv', 'raw_products.csv')
+        s3_object = s3.get_object(Bucket=bucket, Key=file_from_s3)
+        s3_data = s3_object['Body'].read().decode('utf-8')
+        df = pd.read_csv(StringIO(s3_data))
+        print('S3 file Downloaded')
+        return df
 
 
         
@@ -102,5 +109,5 @@ if __name__ == '__main__':
     # save_df_to_csv = raw_stores.to_csv('test.csv')
     # de.read_rds_table(table_name='legacy_users')
     # engine=db, table_name='legacy_users'
-    de.extract_from_s3()
+    de.extract_from_s3(bucket=BUCKET_NAME, file_from_s3=S3_FILE)
 
