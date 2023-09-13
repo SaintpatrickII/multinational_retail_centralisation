@@ -1,5 +1,6 @@
 # %%
 import csv
+import json
 import re
 import yaml 
 import pandas as pd
@@ -19,6 +20,8 @@ AWS_STORES = config('AWS_STORES')
 AWS_ALL_STORES = config('AWS_ALL_STORES')
 BUCKET_NAME = config('BUCKET_NAME')
 S3_FILE = config('FILE_NAME')
+JSON_FILE = config('JSON_FILE')
+PDF_FILE = config('PDF_FILE')
 
 class DataCleaning:
     def __init__(self) -> None:
@@ -47,9 +50,7 @@ class DataCleaning:
         users_table = hf.datetime_transform(date_cols, users_table)
         users_table.drop_duplicates()
         users_table.dropna()
-        print(users_table.info())
-        print(users_table.head(20))
-
+        print('User Data Cleaned')
         return users_table
 
     
@@ -76,9 +77,7 @@ class DataCleaning:
         cards = hf.month_year_transform(month_year_cols, cards)
         date_cols = ['date_payment_confirmed']
         cards = hf.datetime_transform(date_cols, cards)
-        print(cards.head(10))
         print('Card Cleaning Done!')
-
         return cards
 
     def clean_store_data(self, store_data: pd.DataFrame):
@@ -101,8 +100,6 @@ class DataCleaning:
                                     .apply(lambda x:x.replace('eeEurope','Europe')) \
                                     .apply(lambda x:x.replace('eeAmerica','America'))
         hf.column_value_set('continent', stores)
-        print(stores.head())
-        print(len(stores))
         print('Store Dataframe Cleaned')
         return stores
 
@@ -116,7 +113,7 @@ class DataCleaning:
                 wrong_char = value[-1]
                 value= value.replace(wrong_char,'').strip()
             return value
-        products.loc[:,'weight'] =products.loc[:,'weight'].astype('str').apply(lambda x:correct_format(x))
+        products.loc[:,'weight'] = products.loc[:,'weight'].astype('str').apply(lambda x:correct_format(x))
 
         def barcode_weights(value: str):
             if value[0].isalpha() is True or value[1].isalpha() is True:
@@ -168,10 +165,20 @@ class DataCleaning:
 
     def clean_orders_table(self, orders_table: pd.DataFrame):
         orders = orders_table
+        print(orders.head())
         orders = orders.drop(columns=['first_name','last_name','1','level_0','index']).reindex()
         print('Orders table cleaned')
         return orders
         
+
+    def clean_datetime_table(self, datetime: pd.DataFrame):
+        datetime_table = datetime
+        datetime_table = datetime_table[datetime_table.loc[:, 'month'].astype('str').apply(lambda x : x.isdigit())]
+        datetime_table = datetime_table.dropna()
+        datetime_table = datetime_table.drop_duplicates()
+        print('Datetime table cleaned')
+        return datetime_table
+
 
 
 class CleaningHelperFunctions:
@@ -205,22 +212,22 @@ if __name__ == '__main__':
     de = DataExtractor()
     hf = CleaningHelperFunctions()
 
-    # users cleaning
+    # # users cleaning
     # users_raw = de.read_rds_table(engine=db.engine, table_name='legacy_users')
     # cleaned_res = dc.clean_user_data(users_raw)
     # db.upload_to_db(cleaned_dataframe=cleaned_res, table_name='dim_users', creds=LOCAL_CREDS)
 
-    # cards cleaning
-    # card_raw = de.retrieve_pdf_data(filepath='https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf')
+    # # # cards cleaning
+    # card_raw = de.retrieve_pdf_data(filepath=PDF_FILE)
     # cleaned_cards = dc.clean_card_data(card_data=card_raw)
     # db.upload_to_db(cleaned_dataframe=cleaned_cards, table_name='dim_card_details', creds=LOCAL_CREDS)
 
-    # stores cleaning
+    # # # stores cleaning
     # stores_raw = de.retrieve_stores_data(endpoint=AWS_STORES, header=STORE_API)
     # cleaned_stores = dc.clean_store_data(store_data=stores_raw)
     # db.upload_to_db(cleaned_dataframe=cleaned_stores, table_name='dim_stores_details', creds=LOCAL_CREDS)
 
-    # products cleaning
+    # # # products cleaning
     # products_raw = de.extract_from_s3(bucket=BUCKET_NAME, file_from_s3=S3_FILE)
     # cleaned_products = dc.convert_product_weights(product_data=products_raw)
     # db.upload_to_db(cleaned_dataframe=cleaned_products, table_name='dim_product_details', creds=LOCAL_CREDS)
@@ -228,4 +235,9 @@ if __name__ == '__main__':
     # orders cleaning
     orders_raw = de.read_rds_table(engine=db.engine, table_name='orders_table')
     cleaned_orders = dc.clean_orders_table(orders_table=orders_raw)
-    db.upload_to_db(cleaned_dataframe=cleaned_orders, table_name='orders_table', creds=LOCAL_CREDS)
+    db.upload_to_db(cleaned_dataframe=cleaned_orders, table_name='dim_products', creds=LOCAL_CREDS)
+
+    # datetime cleaning
+    datetime_raw = de.extract_from_s3_json(bucket=BUCKET_NAME, file_from_s3=JSON_FILE)
+    cleaned_datetime = dc.clean_datetime_table(datetime=datetime_raw)
+    db.upload_to_db(cleaned_dataframe=cleaned_datetime, table_name='dim_date_times', creds=LOCAL_CREDS)

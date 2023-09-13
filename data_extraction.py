@@ -21,6 +21,8 @@ AWS_STORES = config('AWS_STORES')
 AWS_ALL_STORES = config('AWS_ALL_STORES')
 BUCKET_NAME = config('BUCKET_NAME')
 S3_FILE = config('FILE_NAME')
+JSON_FILE = config('JSON_FILE')
+PDF_FILE = config('PDF_FILE')
 
 
 
@@ -77,14 +79,13 @@ class DataExtractor:
         api_header = header
         true_header = {'x-api-key': api_header}
         for store in range(0, no_of_stores):
-            print(f'store number {store} proccessing')
             response = requests.get(f'{api_endpoint}{store}', headers=true_header).json()
             curr_stores.append(pd.DataFrame(response,index=[np.NaN]))
         curr_stores_df = pd.concat(curr_stores)
         print(f'stores loaded into dataframe with {len(curr_stores_df)} rows :)')
         return curr_stores_df
 
-    def extract_from_s3(self, bucket: str, file_from_s3):
+    def extract_from_s3(self, bucket: str, file_from_s3: str):
         s3 = boto3.client('s3')
         s3_object = s3.get_object(Bucket=bucket, Key=file_from_s3)
         s3_data = s3_object['Body'].read().decode('utf-8')
@@ -92,8 +93,14 @@ class DataExtractor:
         print('S3 file Downloaded')
         return df
 
-
-        
+    def extract_from_s3_json(self, bucket: str, file_from_s3: str):
+        s3 = boto3.client('s3')
+        s3_object = s3.get_object(Bucket=bucket, Key=file_from_s3)
+        s3_data = s3_object['Body'].read().decode('utf-8')
+        df = pd.read_json(StringIO(s3_data))
+        print(df.head())
+        print('S3 file Downloaded')
+        return df
 
 
 if __name__ == '__main__':
@@ -101,14 +108,18 @@ if __name__ == '__main__':
     # formatted_creds = db.read_db_creds(creds=CLOUD_CREDS)
     # engine = db.init_db_engine(formatted_creds)
     de = DataExtractor()
-    table_list = de.list_db_tables(engine=db.engine)
-    print(table_list)
+    # table_list = de.list_db_tables(engine=db.engine)
+    # print(table_list)
     # de.read_rds_table(engine=db.engine, table_name='legacy_users')
-    # de.retrieve_pdf_data(filepath='https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf')
+    # de.retrieve_pdf_data(filepath=PDF_FILE)
     # de.list_number_of_stores(endpoint=AWS_ALL_STORES, header=STORE_API)
     # raw_stores = de.retrieve_stores_data(endpoint=AWS_STORES, header=STORE_API)
     # save_df_to_csv = raw_stores.to_csv('test.csv')
     # de.read_rds_table(table_name='legacy_users')
     # engine=db, table_name='legacy_users'
-    de.extract_from_s3(bucket=BUCKET_NAME, file_from_s3=S3_FILE)
+    # de.extract_from_s3(bucket=BUCKET_NAME, file_from_s3=S3_FILE)
+    de.extract_from_s3_json(bucket=BUCKET_NAME, file_from_s3=JSON_FILE)
+
+
+
 
