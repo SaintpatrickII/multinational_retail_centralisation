@@ -97,7 +97,11 @@ class DataCleaning:
         stores = stores[stores['longitude'].str.isnumeric()] 
         # convert datetime
         datetime_list = ['opening_date']
-        stores = hf.datetime_transform(datetime_list, stores)
+        # stores = hf.datetime_transform(datetime_list, stores)
+        stores[['opening_date']] = \
+        stores[['opening_date']].apply(pd.to_datetime,
+                                            infer_datetime_format=True,
+                                            errors='coerce')
         # hf.column_value_set('continent', stores)
         stores[['continent']] = stores[['continent']] \
                                     .apply(lambda x:x.replace('eeEurope','Europe')) \
@@ -231,14 +235,14 @@ if __name__ == '__main__':
     # db.upload_to_db(cleaned_dataframe=cleaned_cards, table_name='dim_card_details', creds=LOCAL_CREDS)
 
     # # # # stores cleaning
-    # stores_raw = de.retrieve_stores_data(endpoint=AWS_STORES, header=STORE_API)
-    # cleaned_stores = dc.clean_store_data(store_data=stores_raw)
-    # db.upload_to_db(cleaned_dataframe=cleaned_stores, table_name='dim_stores_details', creds=LOCAL_CREDS)
+    stores_raw = de.retrieve_stores_data(endpoint=AWS_STORES, header=STORE_API)
+    cleaned_stores = dc.clean_store_data(store_data=stores_raw)
+    db.upload_to_db(cleaned_dataframe=cleaned_stores, table_name='dim_stores_details', creds=LOCAL_CREDS)
 
     # # # # products cleaning
-    products_raw = de.extract_from_s3(bucket=BUCKET_NAME, file_from_s3=S3_FILE)
-    cleaned_products = dc.convert_product_weights(product_data=products_raw)
-    db.upload_to_db(cleaned_dataframe=cleaned_products, table_name='dim_product_details', creds=LOCAL_CREDS)
+    # products_raw = de.extract_from_s3(bucket=BUCKET_NAME, file_from_s3=S3_FILE)
+    # cleaned_products = dc.convert_product_weights(product_data=products_raw)
+    # db.upload_to_db(cleaned_dataframe=cleaned_products, table_name='dim_product_details', creds=LOCAL_CREDS)
 
     # # orders cleaning
     # orders_raw = de.read_rds_table(engine=db.engine, table_name='orders_table')

@@ -28,8 +28,8 @@
 
 -- Adapt Null & concat lat to remove dups dim_store_details
 
--- SELECT * FROM dim_stores_details
--- LIMIT 10;
+SELECT * FROM dim_stores_details
+LIMIT 10;
 
 -- UPDATE dim_stores_details
 -- SET latitude = NULL
