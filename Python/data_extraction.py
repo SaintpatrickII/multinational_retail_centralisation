@@ -11,7 +11,7 @@ import requests
 import pandas as pd
 import numpy as np
 from io import StringIO
-from Database_utils import DatabaseConnector
+from Python.Database_utils import DatabaseConnector
 from sqlalchemy import create_engine, inspect
 from decouple import config
 
