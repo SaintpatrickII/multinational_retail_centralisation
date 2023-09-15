@@ -11,7 +11,7 @@ import requests
 import pandas as pd
 import numpy as np
 from io import StringIO
-from Python.Database_utils import DatabaseConnector
+from database_utils import DatabaseConnector
 from sqlalchemy import create_engine, inspect
 from decouple import config
 
@@ -56,6 +56,10 @@ class DataExtractor:
             return pd_users
         else:
             print('Invalid Table')
+
+
+
+            
         
     def retrieve_pdf_data(self, filepath: str):
         cc_df = tabula.read_pdf(filepath, stream=False, pages='all')
@@ -108,8 +112,8 @@ if __name__ == '__main__':
     # formatted_creds = db.read_db_creds(creds=CLOUD_CREDS)
     # engine = db.init_db_engine(formatted_creds)
     de = DataExtractor()
-    # table_list = de.list_db_tables(engine=db.engine)
-    # print(table_list)
+    table_list = de.list_db_tables(engine=db.engine)
+    print(table_list)
     # de.read_rds_table(engine=db.engine, table_name='legacy_users')
     # de.retrieve_pdf_data(filepath=PDF_FILE)
     # de.list_number_of_stores(endpoint=AWS_ALL_STORES, header=STORE_API)
@@ -118,7 +122,7 @@ if __name__ == '__main__':
     # de.read_rds_table(table_name='legacy_users')
     # engine=db, table_name='legacy_users'
     # de.extract_from_s3(bucket=BUCKET_NAME, file_from_s3=S3_FILE)
-    de.extract_from_s3_json(bucket=BUCKET_NAME, file_from_s3=JSON_FILE)
+    # de.extract_from_s3_json(bucket=BUCKET_NAME, file_from_s3=JSON_FILE)
 
 
 

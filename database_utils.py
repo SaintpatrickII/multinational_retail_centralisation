@@ -40,10 +40,6 @@ class DatabaseConnector:
         print('cleaned dataframe uploaded to postgreSQL')
 
 
-   
-
-
-
 if __name__ == '__main__':
     db = DatabaseConnector(creds=CLOUD_CREDS)
     # formatted_creds = db.read_db_creds(creds=CLOUD_CREDS)

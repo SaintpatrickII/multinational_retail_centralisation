@@ -7,10 +7,9 @@ import pandas as pd
 import tabula
 import requests
 import boto3
-from Python.Database_utils import DatabaseConnector
-from Python.data_extraction import DataExtractor
+from data_extraction import DataExtractor
+from database_utils import DatabaseConnector
 from decouple import config
-from itertools import count
 from sqlalchemy import create_engine, inspect
 
 CLOUD_CREDS = config('CLOUD_YAML')
@@ -91,10 +90,14 @@ class DataCleaning:
         stores = stores.set_index(['index'])
         stores = stores.drop_duplicates()
         # get rid of random country_codes
+        
         stores.loc[:, 'country_code'] = stores.loc[stores['country_code'].isin(['GB', 'US', 'DE'])]
         stores.loc[:, 'address'] = stores['address'].str.replace('\n', ' ') #remove \n in address
         stores.loc[:,'staff_numbers'] = stores['staff_numbers'].astype('str').apply(lambda x : re.sub('\D','',x)) #remove letters from staff_numbers
-        stores = stores[stores['longitude'].str.isnumeric()] 
+        stores = stores[stores.longitude != 'N/A']
+        print(stores.head())
+        # stores = stores[stores['longitude'].str.isnumeric()] 
+        
         # convert datetime
         datetime_list = ['opening_date']
         # stores = hf.datetime_transform(datetime_list, stores)
@@ -107,7 +110,8 @@ class DataCleaning:
                                     .apply(lambda x:x.replace('eeEurope','Europe')) \
                                     .apply(lambda x:x.replace('eeAmerica','America'))
         hf.column_value_set('continent', stores)
-        print(stores.head())
+        # print(stores.head())
+        # hf.column_value_set('opening_date', stores)
         print('Store Dataframe Cleaned')
         return stores
 
@@ -168,15 +172,21 @@ class DataCleaning:
         products.dropna()
         products.drop_duplicates()
         products = products[products.weight != 'NaN']
+        products.loc[:,'weight'] = products[products.loc[:,'weight'].astype('str').apply(lambda x:x.replace('.','').isdigit())]
+        products.loc[:,'weight'] = products.loc[:,'weight'].astype('float').apply(lambda x: round(x,2))
+        hf.column_value_set('weight', products)
+        print(products.dtypes)
         print(products.head())
+
         print('products cleaned :)')
         return products
 
     def clean_orders_table(self, orders_table: pd.DataFrame):
         orders = orders_table
-        print(orders.head())
-        print(orders.columns())
+        # print(orders.head())
+        # print(orders.columns())
         orders = orders.drop(columns=['first_name','last_name','1','level_0','index']).reindex()
+        print(orders.head())
         
         print('Orders table cleaned')
         return orders
@@ -222,34 +232,43 @@ if __name__ == '__main__':
     dc = DataCleaning()
     db = DatabaseConnector(creds=CLOUD_CREDS)
     de = DataExtractor()
+    de2 = DataExtractor()
     hf = CleaningHelperFunctions()
+    table_list = de.list_db_tables(engine=db.engine)
+
+ # # orders cleaning
+    order_table = table_list[2]
+    print(order_table)
+    orders_raw = de.read_rds_table(engine=db.engine, table_name=order_table)
+    cleaned_orders = dc.clean_orders_table(orders_table=orders_raw)
+    db.upload_to_db(cleaned_dataframe=cleaned_orders, table_name='orders_table', creds=LOCAL_CREDS)
+    db.turn_off_engine()
+
 
     # # users cleaning
-    # users_raw = de.read_rds_table(engine=db.engine, table_name='legacy_users')
-    # cleaned_res = dc.clean_user_data(users_raw)
-    # db.upload_to_db(cleaned_dataframe=cleaned_res, table_name='dim_users', creds=LOCAL_CREDS)
+
+    users_raw = de.read_rds_table(engine=db.engine, table_name=table_list[1])
+    cleaned_res = dc.clean_user_data(users_raw)
+    db.upload_to_db(cleaned_dataframe=cleaned_res, table_name='dim_users', creds=LOCAL_CREDS)
 
     # # # cards cleaning
-    # card_raw = de.retrieve_pdf_data(filepath=PDF_FILE)
-    # cleaned_cards = dc.clean_card_data(card_data=card_raw)
-    # db.upload_to_db(cleaned_dataframe=cleaned_cards, table_name='dim_card_details', creds=LOCAL_CREDS)
+    card_raw = de.retrieve_pdf_data(filepath=PDF_FILE)
+    cleaned_cards = dc.clean_card_data(card_data=card_raw)
+    db.upload_to_db(cleaned_dataframe=cleaned_cards, table_name='dim_card_details', creds=LOCAL_CREDS)
 
     # # # # stores cleaning
     stores_raw = de.retrieve_stores_data(endpoint=AWS_STORES, header=STORE_API)
     cleaned_stores = dc.clean_store_data(store_data=stores_raw)
-    db.upload_to_db(cleaned_dataframe=cleaned_stores, table_name='dim_stores_details', creds=LOCAL_CREDS)
+    db.upload_to_db(cleaned_dataframe=cleaned_stores, table_name='dim_store_details', creds=LOCAL_CREDS)
 
     # # # # products cleaning
-    # products_raw = de.extract_from_s3(bucket=BUCKET_NAME, file_from_s3=S3_FILE)
-    # cleaned_products = dc.convert_product_weights(product_data=products_raw)
-    # db.upload_to_db(cleaned_dataframe=cleaned_products, table_name='dim_product_details', creds=LOCAL_CREDS)
+    products_raw = de.extract_from_s3(bucket=BUCKET_NAME, file_from_s3=S3_FILE)
+    cleaned_products = dc.convert_product_weights(product_data=products_raw)
+    db.upload_to_db(cleaned_dataframe=cleaned_products, table_name='dim_products', creds=LOCAL_CREDS)
 
-    # # orders cleaning
-    # orders_raw = de.read_rds_table(engine=db.engine, table_name='orders_table')
-    # cleaned_orders = dc.clean_orders_table(orders_table=orders_raw)
-    # db.upload_to_db(cleaned_dataframe=cleaned_orders, table_name='dim_products', creds=LOCAL_CREDS)
+   
 
     # # datetime cleaning
-    # datetime_raw = de.extract_from_s3_json(bucket=BUCKET_NAME, file_from_s3=JSON_FILE)
-    # cleaned_datetime = dc.clean_datetime_table(datetime=datetime_raw)
-    # db.upload_to_db(cleaned_dataframe=cleaned_datetime, table_name='dim_date_times', creds=LOCAL_CREDS)
+    datetime_raw = de.extract_from_s3_json(bucket=BUCKET_NAME, file_from_s3=JSON_FILE)
+    cleaned_datetime = dc.clean_datetime_table(datetime=datetime_raw)
+    db.upload_to_db(cleaned_dataframe=cleaned_datetime, table_name='dim_date_times', creds=LOCAL_CREDS)
