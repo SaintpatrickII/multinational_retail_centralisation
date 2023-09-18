@@ -92,6 +92,8 @@ class DataCleaning:
         # get rid of random country_codes
         
         stores.loc[:, 'country_code'] = stores.loc[stores['country_code'].isin(['GB', 'US', 'DE'])]
+        stores = stores[stores.country_code.isin(['GB', 'US', 'DE'])]
+        stores = stores[stores.country_code != 'NULL']
         stores.loc[:, 'address'] = stores['address'].str.replace('\n', ' ') #remove \n in address
         stores.loc[:,'staff_numbers'] = stores['staff_numbers'].astype('str').apply(lambda x : re.sub('\D','',x)) #remove letters from staff_numbers
         stores = stores[stores.longitude != 'N/A']
@@ -175,6 +177,8 @@ class DataCleaning:
         products.loc[:,'weight'] = products[products.loc[:,'weight'].astype('str').apply(lambda x:x.replace('.','').isdigit())]
         products.loc[:,'weight'] = products.loc[:,'weight'].astype('float').apply(lambda x: round(x,2))
         hf.column_value_set('weight', products)
+        datetime_col = ['date_added']
+        products = hf.datetime_transform(datetime_col, products)
         print(products.dtypes)
         print(products.head())
 
