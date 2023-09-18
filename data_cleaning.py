@@ -280,3 +280,4 @@ if __name__ == '__main__':
     datetime_raw = de.extract_from_s3_json(bucket=BUCKET_NAME, file_from_s3=JSON_FILE)
     cleaned_datetime = dc.clean_datetime_table(datetime=datetime_raw)
     db.upload_to_db(cleaned_dataframe=cleaned_datetime, table_name='dim_date_times', creds=LOCAL_CREDS)
+    print('All Cleaning Done')
