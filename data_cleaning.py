@@ -229,24 +229,32 @@ class CleaningHelperFunctions:
 
 
 if __name__ == '__main__':
+    def orders_run():
+        dc2 = DataCleaning()
+        db2 = DatabaseConnector(creds=CLOUD_CREDS)
+        de2 = DataExtractor()
+        table_list = de2.list_db_tables(engine=db2.engine)
+        orders_raw = de2.read_rds_table(engine=db2.engine, table_name=table_list[2])
+        cleaned_orders = dc2.clean_orders_table(orders_table=orders_raw)
+        db2.upload_to_db(cleaned_dataframe=cleaned_orders, table_name='orders_table', creds=LOCAL_CREDS)
+    orders_run()
+
+
     dc = DataCleaning()
     db = DatabaseConnector(creds=CLOUD_CREDS)
     de = DataExtractor()
-    de2 = DataExtractor()
     hf = CleaningHelperFunctions()
     table_list = de.list_db_tables(engine=db.engine)
 
  # # orders cleaning
-    order_table = table_list[2]
-    print(order_table)
-    orders_raw = de.read_rds_table(engine=db.engine, table_name=order_table)
-    cleaned_orders = dc.clean_orders_table(orders_table=orders_raw)
-    db.upload_to_db(cleaned_dataframe=cleaned_orders, table_name='orders_table', creds=LOCAL_CREDS)
-    db.turn_off_engine()
+    print(table_list[2])
+    # orders_raw = de.read_rds_table(engine=db.engine, table_name=table_list[2])
+    # cleaned_orders = dc.clean_orders_table(orders_table=orders_raw)
+    # db.upload_to_db(cleaned_dataframe=cleaned_orders, table_name='orders_table', creds=LOCAL_CREDS)
 
 
     # # users cleaning
-
+    print(table_list[1])
     users_raw = de.read_rds_table(engine=db.engine, table_name=table_list[1])
     cleaned_res = dc.clean_user_data(users_raw)
     db.upload_to_db(cleaned_dataframe=cleaned_res, table_name='dim_users', creds=LOCAL_CREDS)

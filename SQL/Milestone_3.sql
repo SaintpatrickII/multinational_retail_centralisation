@@ -2,13 +2,13 @@
 
 --Task 1: Cast types to orders_table
 
-ALTER TABLE orders_table 
-ALTER COLUMN product_quantity TYPE SMALLINT,
-ALTER COLUMN date_uuid TYPE UUID USING date_uuid::UUID,
-ALTER COLUMN user_uuid TYPE UUID USING user_uuid::UUID,
-ALTER COLUMN card_number TYPE VARCHAR(19),
-ALTER COLUMN store_code TYPE VARCHAR(12),
-ALTER COLUMN product_code TYPE VARCHAR(11);
+-- ALTER TABLE orders_table 
+-- ALTER COLUMN product_quantity TYPE SMALLINT,
+-- ALTER COLUMN date_uuid TYPE UUID USING date_uuid::UUID,
+-- ALTER COLUMN user_uuid TYPE UUID USING user_uuid::UUID,
+-- ALTER COLUMN card_number TYPE VARCHAR(19),
+-- ALTER COLUMN store_code TYPE VARCHAR(12),
+-- ALTER COLUMN product_code TYPE VARCHAR(11);
 
 -- SELECT * FROM orders_table
 -- LIMIT 10;
@@ -83,8 +83,8 @@ ALTER COLUMN product_code TYPE VARCHAR(11);
 -- ALTER TABLE dim_products
 -- 	RENAME COLUMN removed TO still_available;
 
--- SELECT * FROM dim_products
--- LIMIT 10;
+SELECT * FROM dim_products
+LIMIT 10;
 
 -- ALTER TABLE dim_products
 -- ALTER COLUMN product_price TYPE FLOAT USING product_price::DOUBLE PRECISION,
