@@ -91,7 +91,7 @@ class DataCleaning:
         stores = stores.drop_duplicates()
         # get rid of random country_codes
         
-        stores.loc[:, 'country_code'] = stores.loc[stores['country_code'].isin(['GB', 'US', 'DE'])]
+        # stores.loc[:, 'country_code'] = stores.loc[stores['country_code'].isin(['GB', 'US', 'DE'])]
         stores = stores[stores.country_code.isin(['GB', 'US', 'DE'])]
         stores = stores[stores.country_code != 'NULL']
         stores.loc[:, 'address'] = stores['address'].str.replace('\n', ' ') #remove \n in address
@@ -241,7 +241,7 @@ if __name__ == '__main__':
         orders_raw = de2.read_rds_table(engine=db2.engine, table_name=table_list[2])
         cleaned_orders = dc2.clean_orders_table(orders_table=orders_raw)
         db2.upload_to_db(cleaned_dataframe=cleaned_orders, table_name='orders_table', creds=LOCAL_CREDS)
-    orders_run()
+    # orders_run()
 
 
     dc = DataCleaning()
@@ -250,23 +250,17 @@ if __name__ == '__main__':
     hf = CleaningHelperFunctions()
     table_list = de.list_db_tables(engine=db.engine)
 
- # # orders cleaning
-    print(table_list[2])
-    # orders_raw = de.read_rds_table(engine=db.engine, table_name=table_list[2])
-    # cleaned_orders = dc.clean_orders_table(orders_table=orders_raw)
-    # db.upload_to_db(cleaned_dataframe=cleaned_orders, table_name='orders_table', creds=LOCAL_CREDS)
-
 
     # # users cleaning
     print(table_list[1])
-    users_raw = de.read_rds_table(engine=db.engine, table_name=table_list[1])
-    cleaned_res = dc.clean_user_data(users_raw)
-    db.upload_to_db(cleaned_dataframe=cleaned_res, table_name='dim_users', creds=LOCAL_CREDS)
+    # users_raw = de.read_rds_table(engine=db.engine, table_name=table_list[1])
+    # cleaned_res = dc.clean_user_data(users_raw)
+    # db.upload_to_db(cleaned_dataframe=cleaned_res, table_name='dim_users', creds=LOCAL_CREDS)
 
     # # # cards cleaning
-    card_raw = de.retrieve_pdf_data(filepath=PDF_FILE)
-    cleaned_cards = dc.clean_card_data(card_data=card_raw)
-    db.upload_to_db(cleaned_dataframe=cleaned_cards, table_name='dim_card_details', creds=LOCAL_CREDS)
+    # card_raw = de.retrieve_pdf_data(filepath=PDF_FILE)
+    # cleaned_cards = dc.clean_card_data(card_data=card_raw)
+    # db.upload_to_db(cleaned_dataframe=cleaned_cards, table_name='dim_card_details', creds=LOCAL_CREDS)
 
     # # # # stores cleaning
     stores_raw = de.retrieve_stores_data(endpoint=AWS_STORES, header=STORE_API)
@@ -274,14 +268,14 @@ if __name__ == '__main__':
     db.upload_to_db(cleaned_dataframe=cleaned_stores, table_name='dim_store_details', creds=LOCAL_CREDS)
 
     # # # # products cleaning
-    products_raw = de.extract_from_s3(bucket=BUCKET_NAME, file_from_s3=S3_FILE)
-    cleaned_products = dc.convert_product_weights(product_data=products_raw)
-    db.upload_to_db(cleaned_dataframe=cleaned_products, table_name='dim_products', creds=LOCAL_CREDS)
+    # products_raw = de.extract_from_s3(bucket=BUCKET_NAME, file_from_s3=S3_FILE)
+    # cleaned_products = dc.convert_product_weights(product_data=products_raw)
+    # db.upload_to_db(cleaned_dataframe=cleaned_products, table_name='dim_products', creds=LOCAL_CREDS)
 
    
 
     # # datetime cleaning
-    datetime_raw = de.extract_from_s3_json(bucket=BUCKET_NAME, file_from_s3=JSON_FILE)
-    cleaned_datetime = dc.clean_datetime_table(datetime=datetime_raw)
-    db.upload_to_db(cleaned_dataframe=cleaned_datetime, table_name='dim_date_times', creds=LOCAL_CREDS)
+    # datetime_raw = de.extract_from_s3_json(bucket=BUCKET_NAME, file_from_s3=JSON_FILE)
+    # cleaned_datetime = dc.clean_datetime_table(datetime=datetime_raw)
+    # db.upload_to_db(cleaned_dataframe=cleaned_datetime, table_name='dim_date_times', creds=LOCAL_CREDS)
     print('All Cleaning Done')

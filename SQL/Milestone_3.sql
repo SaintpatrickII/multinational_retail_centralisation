@@ -137,4 +137,67 @@ ALTER COLUMN date_payment_confirmed TYPE DATE;
 SELECT * FROM dim_card_details
 LIMIT 10;
 
--- Task 8: Create primary keys in the dimension tables
+--Task 8: Set a PRIMARY KEY in the dimension tables
+
+ALTER TABLE dim_card_details 
+ADD PRIMARY KEY (card_number);
+ALTER TABLE dim_date_times
+ADD PRIMARY KEY (date_uuid);
+ALTER TABLE dim_products
+ADD PRIMARY KEY (product_code);
+ALTER TABLE dim_store_details
+ADD PRIMARY KEY (store_code);
+ALTER TABLE dim_users
+ADD PRIMARY KEY (user_uuid);
+
+--Task 9: Finalise the star-based schema and add foreign keys to the orders table
+
+SELECT * FROM orders_table
+LIMIT 10;
+
+ALTER TABLE orders_table ADD CONSTRAINT fk_dim_date_times FOREIGN KEY (date_uuid) REFERENCES dim_date_times (date_uuid);
+ALTER TABLE orders_table ADD CONSTRAINT fk_product_code FOREIGN KEY (product_code) REFERENCES dim_products (product_code); --needs fix
+ALTER TABLE orders_table ADD CONSTRAINT fk_store_code FOREIGN KEY (store_code) REFERENCES dim_store_details (store_code); -- needs fix
+ALTER TABLE orders_table ADD CONSTRAINT fk_card_number FOREIGN KEY (card_number) REFERENCES dim_card_details (card_number); 
+ALTER TABLE orders_table ADD CONSTRAINT fk_user_uuid FOREIGN KEY (user_uuid) REFERENCES dim_users (user_uuid); 
+
+
+SELECT *
+FROM dim_products prod
+LEFT JOIN orders_table ord ON prod.product_code = ord.product_code;
+-- WHERE prod.product_code IS NULL;
+
+SELECT sto.store_code
+FROM dim_store_details sto
+LEFT JOIN orders_table ord ON sto.store_code = ord.store_code
+WHERE sto.store_code IS NULL;
+
+
+
+SELECT DISTINCT(ord.product_code)
+FROM orders_table ord
+WHERE NOT EXISTS 
+	(SELECT * FROM dim_products prod
+	WHERE prod.product_code = ord.product_code);
+
+SELECT * FROM orders_table
+WHERE product_code = 'c7-2549027x';
+
+
+SELECT DISTINCT(ord.store_code)
+FROM orders_table ord
+WHERE NOT EXISTS 
+	(SELECT * FROM dim_store_details sto
+	WHERE sto.store_code = ord.store_code);
+
+SELECT * FROM orders_table
+LIMIT 10;
+
+SELECT * FROM dim_products
+LIMIT 10;
+
+SELECT * FROM dim_store_details
+LIMIT 10;
+
+SELECT * FROM orders_table
+LEFT JOIN 
