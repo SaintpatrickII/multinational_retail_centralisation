@@ -14,7 +14,12 @@ JSON_FILE = config('JSON_FILE')
 PDF_FILE = config('PDF_FILE')
 
 if __name__ == '__main__':
+
     def orders_run():
+        """
+        The function `orders_run()` connects to a database, extracts data from a specific table, cleans
+        the data, and uploads the cleaned data to a different table in a different database.
+        """
         db2 = DatabaseConnector(creds=CLOUD_CREDS)
         de2 = DataExtractor()
         table_list = de2.list_db_tables(engine=db2.engine)
@@ -28,6 +33,10 @@ if __name__ == '__main__':
     de = DataExtractor()
    
     def users_run():
+        """
+        The function `users_run()` retrieves data from a database table, cleans the data, and uploads
+        the cleaned data to another database table.
+        """
         table_list = de.list_db_tables(engine=db.engine)
         users_raw = de.read_rds_table(engine=db.engine, table_name=table_list[1])
         user_clean_init = DataCleaning(users_table=users_raw)
@@ -36,6 +45,10 @@ if __name__ == '__main__':
     users_run()
 
     def cards_run():
+        """
+        The function "cards_run" retrieves data from a PDF file, cleans the data, and uploads it to a
+        database table.
+        """
         card_raw = de.retrieve_pdf_data(filepath=PDF_FILE)
         card_cleaned_init = DataCleaning(cards_table=card_raw)
         cleaned_cards = card_cleaned_init.clean_card_data()
@@ -43,6 +56,10 @@ if __name__ == '__main__':
     cards_run()
 
     def stores_run():
+        """
+        The function `stores_run()` retrieves store data from an endpoint, cleans the data, and uploads
+        it to a database table.
+        """
         stores_raw = de.retrieve_stores_data(endpoint=AWS_STORES, header=STORE_API)
         stores_clean_init = DataCleaning(stores_table=stores_raw)
         cleaned_stores = stores_clean_init.clean_store_data()
@@ -50,6 +67,10 @@ if __name__ == '__main__':
     stores_run()
 
     def products_run():
+        """
+        The function `products_run()` extracts data from an S3 bucket, cleans the data, and uploads it
+        to a database table.
+        """
         products_raw = de.extract_from_s3(bucket=BUCKET_NAME, file_from_s3=S3_FILE)
         product_clean_init = DataCleaning(products_table=products_raw)
         cleaned_products = product_clean_init.convert_product_weights()
@@ -57,6 +78,10 @@ if __name__ == '__main__':
     products_run()
 
     def datetime_run():
+        """
+        The function `datetime_run()` extracts datetime data from a JSON file stored in an S3 bucket,
+        cleans the data, and uploads it to a database table.
+        """
         datetime_raw = de.extract_from_s3_json(bucket=BUCKET_NAME, file_from_s3=JSON_FILE)
         datetime_clean_init = DataCleaning(datetimes_table=datetime_raw)
         cleaned_datetime = datetime_clean_init.clean_datetime_table()
