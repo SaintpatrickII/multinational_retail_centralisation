@@ -2,6 +2,7 @@ import re
 import pandas as pd
 from decouple import config
 
+
 CLOUD_CREDS = config('CLOUD_YAML')
 LOCAL_CREDS = config('LOCAL_YAML')
 STORE_API = config('STORE_API')
@@ -11,7 +12,6 @@ BUCKET_NAME = config('BUCKET_NAME')
 S3_FILE = config('FILE_NAME')
 JSON_FILE = config('JSON_FILE')
 PDF_FILE = config('PDF_FILE')
-
 
 # The `DataCleaning` class is used for data cleaning and manipulation, with attributes representing
 # different tables.
@@ -31,6 +31,16 @@ class DataCleaning:
 
     @staticmethod
     def datetime_transform(columns: list, df: pd.DataFrame):
+        """
+        The function `datetime_transform` converts specified columns in a pandas DataFrame to datetime
+        format.
+        
+        :param columns: A list of column names in the DataFrame that contain date or time values
+        :type columns: list
+        :param df: The `df` parameter is a pandas DataFrame that contains the data you want to transform
+        :type df: pd.DataFrame
+        :return: the transformed DataFrame with the specified date columns converted to datetime format.
+        """
         date_cols = columns
         for date_col in date_cols:
             df.loc[:,date_col] = df.loc[:,date_col].apply(pd.to_datetime, 
@@ -40,6 +50,18 @@ class DataCleaning:
 
     @staticmethod
     def month_year_transform(columns: list, df: pd.DataFrame):
+        """
+        The function `month_year_transform` converts columns in a DataFrame to datetime format using the
+        specified format.
+        
+        :param columns: A list of column names in the DataFrame that contain date values in the format
+        'mm/yy'
+        :type columns: list
+        :param df: The `df` parameter is a pandas DataFrame that contains the data you want to
+        transform. It should have columns that represent dates in the format 'mm/yy'
+        :type df: pd.DataFrame
+        :return: the transformed DataFrame with the specified date columns converted to datetime format.
+        """
         date_cols = columns
         for date_col in date_cols:
             df.loc[:,date_col] = df.loc[:,date_col].apply(pd.to_datetime, 
@@ -49,41 +71,93 @@ class DataCleaning:
 
     @staticmethod
     def column_value_set(column: str, df: pd.DataFrame):
+        """
+        The function `column_value_set` takes a column name and a DataFrame as input, and prints the
+        unique values in that column.
+        
+        :param column: The column parameter is a string that represents the name of the column in the
+        DataFrame that you want to get the unique values from
+        :type column: str
+        :param df: The parameter `df` is a pandas DataFrame, which is a two-dimensional labeled data
+        structure with columns of potentially different types.
+        :type df: pd.DataFrame
+        """
         temp_list = df[column].tolist()
         print(set(temp_list))
 
     @staticmethod
     def kg_cov(value: str):
-            if value[-2:] =='kg':
-                return value[:-2]
-            else:
-                return value
+        """
+        The function `kg_cov` removes the "kg" suffix from a given string if it exists.
+        
+        :param value: The parameter "value" is a string that represents a weight measurement
+        :type value: str
+        :return: The function `kg_cov` returns the input value without the last two characters if the
+        last two characters are 'kg'. Otherwise, it returns the input value as is.
+        """
+        if value[-2:] =='kg':
+            return value[:-2]
+        else:
+            return value
 
     @staticmethod
     def grams_and_ml(value: str):
-            if value[-1] == 'g' and value[-2].isdigit() and value[:-2].isdigit() or value[-2:] == 'ml':
-                value = value.replace('g','').replace('ml','')
-                value = int(value) /1000
-            return value
+        """
+        The function "grams_and_ml" converts a value from grams or milliliters to kilograms or liters
+        respectively.
+        
+        :param value: The parameter `value` is a string that represents a measurement in grams (g) or
+        milliliters (ml)
+        :type value: str
+        :return: the value after converting it to grams.
+        """
+        if value[-1] == 'g' and value[-2].isdigit() and value[:-2].isdigit() or value[-2:] == 'ml':
+            value = value.replace('g','').replace('ml','')
+            value = int(value) /1000
+        return value
 
     @staticmethod
     def multiply_values(value: str):
-            if 'x' in value:
-                value = value.replace(' x ',' ')
-                num1, num2 = value.split(' ')[0], value.split(' ')[1][:-1]
-                new_value = (int(num1) * int(num2)) / 1000
-                return new_value
-            else:
-                return value
+        """
+        The function takes a string value, checks if it contains 'x', replaces ' x ' with a space,
+        splits the string into two numbers, multiplies them, and returns the result divided by 1000.
+        
+        :param value: The parameter `value` is a string that represents a multiplication operation. It
+        can have the format "num1 x num2", where `num1` and `num2` are numbers
+        :type value: str
+        :return: the multiplied value if the input string contains 'x', otherwise it returns the input
+        value itself.
+        """
+        if 'x' in value:
+            value = value.replace(' x ',' ')
+            num1, num2 = value.split(' ')[0], value.split(' ')[1][:-1]
+            new_value = (int(num1) * int(num2)) / 1000
+            return new_value
+        else:
+            return value
     
     @staticmethod
     def oz_conversion(value: str):
-            if 'oz' in value:
-                value = value.replace('oz', '')
-                value = float(value) * 28.3495
-            return value
+        """
+        The function `oz_conversion` converts a value from ounces to grams.
+        
+        :param value: The parameter "value" is a string that represents a measurement in ounces
+        :type value: str
+        :return: The value after converting it from ounces to grams.
+        """
+        if 'oz' in value:
+            value = value.replace('oz', '')
+            value = float(value) * 28.3495
+        return value
 
     def clean_user_data(self):
+        """
+        The function `clean_user_data` cleans and transforms user data by removing duplicates, replacing
+        characters in phone numbers, removing non-numeric characters, replacing country codes, filtering
+        by specific country codes, filtering by user UUID length, transforming date columns, and
+        dropping null values.
+        :return: the cleaned users_table.
+        """
         users_table = self.users_table
         users_table.drop_duplicates()
         replace_dict = {
@@ -108,6 +182,12 @@ class DataCleaning:
         return users_table
 
     def clean_card_data(self):
+        """
+        The function `clean_card_data` cleans and transforms a table of card data by removing
+        duplicates, null values, and non-numeric characters, and converting date columns to the correct
+        datetime format.
+        :return: the cleaned cards data.
+        """
         cards = self.cards_table
         index = [row for row in range(0, len(cards))] # cards table has no index, lets fix that
         cards['index'] = index                         # new column
@@ -127,6 +207,13 @@ class DataCleaning:
         return cards
 
     def clean_store_data(self):
+        """
+        The function "clean_store_data" cleans and transforms a dataframe containing store data by
+        removing unnecessary columns, removing duplicates, filtering by country code, replacing newline
+        characters in addresses, removing letters from staff numbers, converting datetime values, and
+        correcting misspelled continents.
+        :return: the cleaned "stores" dataframe.
+        """
         print('Cleaning Store Dataframe')
         stores = self.stores_table
         stores = stores.iloc[:, 1:] #remove dummy index
@@ -147,6 +234,11 @@ class DataCleaning:
         return stores
 
     def convert_product_weights(self):
+        """
+        The function `convert_product_weights` cleans and converts the weights of products in a product
+        table.
+        :return: the cleaned products table.
+        """
         products = self.product_table
         products.loc[:, 'product_price'] = products['product_price'].astype('str').apply(lambda x : x.replace('£', ''))
         products = products[~products['product_price'].str.contains("[a-zA-Z]").fillna(False)]
@@ -163,12 +255,22 @@ class DataCleaning:
         return products
 
     def clean_orders_table(self):
+        """
+        The function `clean_orders_table` removes specific columns from the `orders_table` and returns
+        the cleaned table.
+        :return: the cleaned orders table.
+        """
         orders = self.orders_table
         orders = orders.drop(columns=['first_name','last_name','1','level_0','index']).reindex()
         print('Orders table cleaned')
         return orders
 
     def clean_datetime_table(self):
+        """
+        The function `clean_datetime_table` cleans a datetime table by removing rows where the 'month'
+        column is not a digit, dropping any rows with missing values, and removing duplicate rows.
+        :return: the cleaned datetime table.
+        """
         datetime_table = self.datetimes_table
         datetime_table = datetime_table[datetime_table.loc[:, 'month'].astype('str').apply(lambda x : x.isdigit())]
         datetime_table = datetime_table.dropna()
