@@ -29,9 +29,7 @@ class DataCleaning:
     
     def clean_user_data(self, user_data: pd.DataFrame):
         users_table = user_data
-        print(len(users_table))
         users_table.drop_duplicates()
-        # print(users_table['country_code'].unique())
         replace_dict = {
             '(': '',
             ')': '',
@@ -56,8 +54,6 @@ class DataCleaning:
 
     
     def clean_card_data(self, card_data: pd.DataFrame):
-        cards = card_data
-        return cards
         cards = card_data
         # cards table has no index, lets fix that
         index = [row for row in range(0, len(cards))] 
@@ -86,36 +82,22 @@ class DataCleaning:
     def clean_store_data(self, store_data: pd.DataFrame):
         print('Cleaning Store Dataframe')
         stores = store_data
-        # stores = stores.iloc[:, 1:] #remove dummy index
+        stores = stores.iloc[:, 1:] #remove dummy index
         index = [row for row in range(0, len(stores))] 
         stores['index'] = index                         # new column
         stores = stores.set_index(['index'])
         stores = stores.drop_duplicates()
         # get rid of random country_codes
-        
-        stores.loc[:, 'country_code'] = stores.loc[stores['country_code'].isin(['GB', 'US', 'DE'])]
         stores = stores[stores.country_code.isin(['GB', 'US', 'DE'])]
-        stores = stores[stores.country_code != 'NULL']
         stores.loc[:, 'address'] = stores['address'].str.replace('\n', ' ') #remove \n in address
         stores.loc[:,'staff_numbers'] = stores['staff_numbers'].astype('str').apply(lambda x : re.sub('\D','',x)) #remove letters from staff_numbers
-        stores = stores[stores.longitude != 'N/A']
-        print(stores.head())
-        # stores = stores[stores['longitude'].str.isnumeric()] 
-        
-        # convert datetime
+        # convert datetime & mispelled continents
         datetime_list = ['opening_date']
-        # stores = hf.datetime_transform(datetime_list, stores)
-        stores[['opening_date']] = \
-        stores[['opening_date']].apply(pd.to_datetime,
-                                            infer_datetime_format=True,
-                                            errors='coerce')
-        # hf.column_value_set('continent', stores)
+        stores = hf.datetime_transform(datetime_list, stores)
         stores[['continent']] = stores[['continent']] \
                                     .apply(lambda x:x.replace('eeEurope','Europe')) \
                                     .apply(lambda x:x.replace('eeAmerica','America'))
         hf.column_value_set('continent', stores)
-        # print(stores.head())
-        # hf.column_value_set('opening_date', stores)
         print('Store Dataframe Cleaned')
         return stores
 
@@ -132,9 +114,11 @@ class DataCleaning:
             else:
                 return value
 
-        def barcode_weights(value: str):
-            if value[-1] not in ['g', 'z', 'l']:
-                new_value = 0
+        def multiply_values(value):
+            if 'x' in value:
+                value = value.replace(' x ',' ')
+                num1, num2 = value.split(' ')[0], value.split(' ')[1][:-1]
+                new_value = (int(num1) * int(num2)) / 1000
                 return new_value
             else:
                 return value
@@ -146,64 +130,29 @@ class DataCleaning:
             return value
             
 
-        def multiply_values(value):
-            if 'x' in value:
-                value = value.replace(' x ',' ')
-                num1, num2 = value.split(' ')[0], value.split(' ')[1][:-1]
-                new_value = (int(num1) * int(num2)) / 1000
-                # print(new_value)
-                return new_value
-            else:
-                return value
+        def grams_and_ml(value: str):
+            if value[-1] == 'g' and value[-2].isdigit() and value[:-2].isdigit() or value[-2:] == 'ml':
+                value = value.replace('g','').replace('ml','')
+                value = int(value) /1000
+            return value
 
         def oz_conversion(value):
             if 'oz' in value:
                 value = value.replace('oz', '')
                 value = float(value) * 28.3495
             return value
-        # return products
-        # contain_values = products[products['weight'].str.contains('XCD69KUI0K')]
-        # print(contain_values)
+        #  apply Weight Conversions
         products.loc[:, 'weight'] = products.loc[:,'weight'].astype('str').apply(lambda x : kg_cov(x)) #-> kg conversion works
         products.loc[:,'weight'] = products.loc[:,'weight'].astype('str').apply(lambda x:oz_conversion(x)) #-> oz works correctly
-       
-        # products.loc[:, 'weight'] = products.loc[:, 'weight'].astype('str').apply(lambda x : barcode_weights(x))
-        products.loc[:, 'product_price'] = products.loc[:, 'product_price'].astype('str').apply(lambda x : barcode_weights(x))
-
         products.loc[:,'weight'] = products.loc[:,'weight'].astype('str').apply(lambda x:multiply_values(x)) #-> x conversion works
-        contain_values = products[products['weight'].str.contains('M5-8164943v', na=False)]
-        print (contain_values)
-        # return products
-        
         products.loc[:,'weight'] = products.loc[:,'weight'].astype('str').apply(lambda x:grams_and_ml(x))
         products.loc[:,'weight'] = products[products.loc[:,'weight'].astype('str').apply(lambda x:x.replace('.','').isdigit())]
         products.loc[:,'weight'] = products.loc[:,'weight'].astype('float').apply(lambda x: round(x,2))
         datetime_col = ['date_added']
         products = hf.datetime_transform(datetime_col, products)
         products = products[products.weight != 'NaN']
-        # products.dropna()
-        # products = products[products.weight != 'NaN']
-        # products = products[products.weight != 'NaN']
         return products
-        products.loc[:, 'weight'] = products.loc[:, 'weight'].astype('str').apply(lambda x : barcode_weights(x))
 
-        products.loc[:,'weight'] = products.loc[:,'weight'].astype('str').apply(lambda x:grams_and_ml(x))
-        # print(products.head())
-        # return products
-        
-        products.drop_duplicates()
-        
-        products = products[products.weight != 'NaN']
-        products.loc[:,'weight'] = products[products.loc[:,'weight'].astype('str').apply(lambda x:x.replace('.','').isdigit())]
-        products.loc[:,'weight'] = products.loc[:,'weight'].astype('float').apply(lambda x: round(x,2))
-        hf.column_value_set('weight', products)
-        datetime_col = ['date_added']
-        products = hf.datetime_transform(datetime_col, products)
-        print(products.dtypes)
-        print(products.head())
-
-        print('products cleaned :)')
-        return products
 
     def clean_orders_table(self, orders_table: pd.DataFrame):
         orders = orders_table
@@ -283,14 +232,14 @@ if __name__ == '__main__':
     # db.upload_to_db(cleaned_dataframe=cleaned_cards, table_name='dim_card_details', creds=LOCAL_CREDS)
 
     # # # # stores cleaning
-    # stores_raw = de.retrieve_stores_data(endpoint=AWS_STORES, header=STORE_API)
-    # cleaned_stores = dc.clean_store_data(store_data=stores_raw)
-    # db.upload_to_db(cleaned_dataframe=cleaned_stores, table_name='dim_store_details', creds=LOCAL_CREDS)
+    stores_raw = de.retrieve_stores_data(endpoint=AWS_STORES, header=STORE_API)
+    cleaned_stores = dc.clean_store_data(store_data=stores_raw)
+    db.upload_to_db(cleaned_dataframe=cleaned_stores, table_name='dim_store_details', creds=LOCAL_CREDS)
 
     # # # # products cleaning
-    products_raw = de.extract_from_s3(bucket=BUCKET_NAME, file_from_s3=S3_FILE)
-    cleaned_products = dc.convert_product_weights(product_data=products_raw)
-    db.upload_to_db(cleaned_dataframe=cleaned_products, table_name='dim_products', creds=LOCAL_CREDS)
+    # products_raw = de.extract_from_s3(bucket=BUCKET_NAME, file_from_s3=S3_FILE)
+    # cleaned_products = dc.convert_product_weights(product_data=products_raw)
+    # db.upload_to_db(cleaned_dataframe=cleaned_products, table_name='dim_products', creds=LOCAL_CREDS)
 
    
 

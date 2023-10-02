@@ -12,6 +12,9 @@ S3_FILE = config('FILE_NAME')
 JSON_FILE = config('JSON_FILE')
 PDF_FILE = config('PDF_FILE')
 
+
+# The `DataCleaning` class is used for data cleaning and manipulation, with attributes representing
+# different tables.
 class DataCleaning:
     def __init__(self, users_table=None,
                        cards_table=None,

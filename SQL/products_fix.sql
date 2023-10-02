@@ -68,12 +68,17 @@ SELECT * FROM join_prod_ord;
 
 
 
+-- join products to orders, can see rows missing
 WITH join_prod_ord AS (SELECT *
 FROM orders_table ord
 LEFT JOIN  dim_products prod
 ON  prod.product_code = ord.product_code)
 
 SELECT * FROM join_prod_ord;
+
+
+
+
 
 SELECT * FROM dim_products
 WHERE product_name = 'Skin Techniques Gold Hydrogel Collagen Eye Mask'
@@ -109,6 +114,8 @@ SELECT * FROM orders_table
 WHERE product_code = 'w5-6777421C';
 
 
+
+-- check rows that are missing from orders that exist in products
 SELECT DISTINCT(ord.product_code)
 FROM orders_table ord
 WHERE NOT EXISTS 
@@ -123,4 +130,18 @@ DROP TABLE dim_products;
 
 
 
-ALTER TABLE orders_table ADD CONSTRAINT fk_product_code FOREIGN KEY (product_code) REFERENCES dim_products (product_code);
+SELECT DISTINCT(ord.store_code)
+FROM orders_table ord
+WHERE NOT EXISTS 
+	(SELECT * FROM dim_store_details sto
+	WHERE sto.store_code = ord.store_code);
+
+SELECT * FROM orders_table
+WHERE store_code = 'WEB-1388012W';
+
+SELECT * FROM dim_store_details
+WHERE store_code = 'BU-89E4DEC5';
+
+SELECT * FROM orders_table
+WHERE store_code = 'BU-89E4DEC5';
+

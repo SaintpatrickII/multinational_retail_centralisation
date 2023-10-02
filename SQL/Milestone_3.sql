@@ -31,10 +31,10 @@ LIMIT 10;
 
 
 UPDATE dim_store_details
-SET latitude = NULL
+SET latitude = 0
 WHERE latitude = 'N/A';
 UPDATE dim_store_details
-SET longitude = NULL
+SET longitude = 0
 WHERE longitude = 'N/A';
 -- --Drop/Merge latitude column
 UPDATE dim_store_details
@@ -85,17 +85,12 @@ LIMIT 10;
 
 --Task 5: Update the dim_products with the required data types
 
--- ALTER TABLE dim_products
--- 	RENAME COLUMN removed TO still_available;
-
--- SELECT * FROM dim_products
--- LIMIT 10;
 
 ALTER TABLE dim_products
 	RENAME COLUMN removed TO still_available;
 
 ALTER TABLE dim_products
-ALTER COLUMN product_price TYPE FLOAT USING product_price::DOUBLE PRECISION,
+ALTER COLUMN product_price TYPE FLOAT USING product_price::DOUBLE PRECISION;
 ALTER COLUMN weight TYPE FLOAT USING weight::DOUBLE PRECISION, 
 ALTER COLUMN category TYPE VARCHAR(18),
 ALTER COLUMN "EAN" TYPE VARCHAR(17),
@@ -156,78 +151,12 @@ SELECT * FROM orders_table
 LIMIT 10;
 
 ALTER TABLE orders_table ADD CONSTRAINT fk_dim_date_times FOREIGN KEY (date_uuid) REFERENCES dim_date_times (date_uuid);
-ALTER TABLE orders_table ADD CONSTRAINT fk_product_code FOREIGN KEY (product_code) REFERENCES dim_products (product_code); --needs fix
-ALTER TABLE orders_table ADD CONSTRAINT fk_store_code FOREIGN KEY (store_code) REFERENCES dim_store_details (store_code); -- needs fix
+ALTER TABLE orders_table ADD CONSTRAINT fk_product_code FOREIGN KEY (product_code) REFERENCES dim_products (product_code); 
+ALTER TABLE orders_table ADD CONSTRAINT fk_store_code FOREIGN KEY (store_code) REFERENCES dim_store_details (store_code); 
 ALTER TABLE orders_table ADD CONSTRAINT fk_card_number FOREIGN KEY (card_number) REFERENCES dim_card_details (card_number); 
 ALTER TABLE orders_table ADD CONSTRAINT fk_user_uuid FOREIGN KEY (user_uuid) REFERENCES dim_users (user_uuid); 
 
-ALTER TABLE orders_table REMOVE CONSTRAINT fk_product_code FOREIGN KEY (product_code) REFERENCES dim_products (product_code); --needs fix
-ALTER TABLE orders_table REMOVE CONSTRAINT fk_store_code FOREIGN KEY (store_code) REFERENCES dim_store_details (store_code);
-
-
-SELECT *
-FROM dim_products prod
-LEFT JOIN orders_table ord ON prod.product_code = ord.product_code;
--- WHERE prod.product_code IS NULL;
-
-SELECT *
-FROM dim_store_details sto
-LEFT JOIN orders_table ord ON sto.store_code = ord.store_code;
--- WHERE sto.store_code IS NULL;
-
-
-
-SELECT DISTINCT(ord.product_code)
-FROM orders_table ord
-WHERE NOT EXISTS 
-	(SELECT * FROM dim_products prod
-	WHERE prod.product_code = ord.product_code);
-
-SELECT * FROM orders_table
-WHERE product_code = 'c7-2549027x';
-
-
-SELECT DISTINCT(ord.store_code)
-FROM orders_table ord
-WHERE NOT EXISTS 
-	(SELECT * FROM dim_store_details sto
-	WHERE sto.store_code = ord.store_code);
-
-SELECT * FROM orders_table
-LIMIT 10;
-
-SELECT * FROM dim_products
-LIMIT 10;
-
-SELECT * FROM dim_store_details
-LIMIT 10;
-
-SELECT * FROM orders_table
-LEFT JOIN;
-
-
-WITH join_prod_ord AS (SELECT *
-FROM orders_table ord
-WHERE NOT EXISTS 
-	(SELECT * FROM dim_products prod
-	WHERE prod.product_code = ord.product_code)) 
-	
-SELECT * FROM join_prod_ord
-WHERE product_code = 'c7-2549027x';
-
-SELECT * FROM orders_table
-WHERE product_code = 'c7-2549027x';
 
 
 
 
-
-
--- -look at missing rows in order & products:
-WITH join_prod_ord AS (SELECT *
-FROM orders_table ord
-LEFT JOIN  dim_products prod
-ON  prod.product_code = ord.product_code
-WHERE ord.product_code = 'c7-2549027x')
-
-SELECT * FROM join_prod_ord;
