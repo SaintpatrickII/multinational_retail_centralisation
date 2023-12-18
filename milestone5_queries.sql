@@ -1,5 +1,9 @@
+
+-- Task 1: How many stores in each country
+-- count country code, aggregate by country code
+-- order by no. of stores desc
 SELECT 
-	country_code,COUNT(country_code) AS total_no_stores
+	country_code, COUNT(country_code) AS total_no_stores
     FROM 
         dim_store_details
 	GROUP BY 
@@ -8,6 +12,9 @@ SELECT
         total_no_stores DESC;
 
 
+-- Task 2: which locations have the most stores,
+-- Count locality, aggregate by locality, 
+-- Order by count desc
 SELECT 
     locality, COUNT(locality) 
     FROM 
@@ -15,65 +22,108 @@ SELECT
     GROUP BY 
         locality
     ORDER BY 
-        count DESC 
+        COUNT DESC 
     LIMIT 7;
 
 
+
+-- Task 3: Which months have highest amount of sales
+-- Need total_sales which is product_quantity * product price
+-- need to join onto date_time to get months
+-- aggregate by month
 SELECT 	
-    ROUND(CAST(SUM(orders_table.product_quantity*dim_products.product_price)AS NUMERIC),2) 
-    AS sales,dim_date_times.month	
+    ROUND(CAST(SUM(ord.product_quantity * dp.product_price) AS NUMERIC), 2) 
+    AS sales, ddt.month	
     FROM 
-        orders_table
+        orders_table ord
     INNER JOIN 
-        dim_date_times ON dim_date_times.date_uuid = orders_table.date_uuid
+        dim_date_times ddt 
+    ON 
+        ddt.date_uuid = ord.date_uuid
     INNER JOIN 
-        dim_products ON dim_products.product_code = orders_table.product_code
+        dim_products dp
+    ON 
+        dp.product_code = ord.product_code
     GROUP BY 
-        (dim_date_times.month)
+        (ddt.month)
     ORDER BY sales DESC
     LIMIT 6;
 
 
+-- Task 4: How many sales from online
+-- Count all rows, for sum of sales
+-- sum of product quantity for total quantity
 SELECT 	
     COUNT(*) AS number_of_sales,
-    SUM(orders_table.product_quantity)
+    SUM(ord.product_quantity)
     AS product_quantity_count,
 		CASE 
-		WHEN 
-            dim_store_details.store_type = 'Web Portal' 
-        THEN
-		'WEB'
-		ELSE'offline'
+            WHEN 
+                dsd.store_type = 'Web Portal' 
+            THEN
+                'WEB'
+            ELSE
+                'offline'
 		END
-FROM 
-    orders_table
-LEFT JOIN 
-    dim_store_details ON orders_table.store_code = dim_store_details.store_code
-LEFT JOIN
-    dim_products ON dim_products.product_code = orders_table.product_code
-GROUP BY 
-		CASE 
-		WHEN dim_store_details.store_type = 'Web Portal' THEN
-		'WEB'
-		ELSE'offline'
-		END
+    FROM 
+        orders_table ord
+    LEFT JOIN 
+        dim_store_details dsd 
+    ON 
+        ord.store_code = dsd.store_code
+    LEFT JOIN
+        dim_products dp 
+    ON 
+        dp.product_code = ord.product_code
+    GROUP BY 
+            CASE 
+                WHEN 
+                    dsd.store_type = 'Web Portal' 
+                THEN
+                    'WEB'
+                ELSE
+                    'offline'
+            END
+
+-- Alternate
+
+-- select
+-- 	count(*) as number_of_sales,
+-- 	sum(product_quantity),
+-- 	case 
+-- 		when store_code = 'WEB-1388012W' then 'Web'
+-- 		else 'Offline'
+-- 	end as location
+-- from orders_table
+-- group by location
 
 
+
+-- Task 5: percentage of sales through each store
+-- Need store type, product quantity and product price (orders, products & store_details tables)
+-- 
 SELECT 
-    dim_store_details.store_type, 
-    ROUND(CAST(SUM(orders_table.product_quantity*dim_products.product_price) as NUMERIC), 2)
+    dsd.store_type, 
+    ROUND(CAST(SUM(ord.product_quantity * dp.product_price) as NUMERIC), 2)
     AS total_sales,
     ROUND(COUNT( * ) / CAST((SELECT COUNT( * ) FROM orders_table) AS NUMERIC), 2) * 100 as "percentage_total(%)"
     FROM 
-        orders_table
+        orders_table ord
     LEFT JOIN 
-        dim_store_details ON orders_table.store_code = dim_store_details.store_code
+        dim_store_details dsd
+    ON 
+        ord.store_code = dsd.store_code
     LEFT JOIN
-        dim_products ON dim_products.product_code = orders_table.product_code
+        dim_products dp
+    ON 
+        dp.product_code = ord.product_code
     GROUP BY 
-        dim_store_details.store_type 
+        dsd.store_type 
+    ORDER BY
+        total_sales DESC
 
 
+-- Task 6: Sales by month
 
 SELECT 
     ROUND(CAST(SUM(dim_products.product_price * orders_table.product_quantity) AS NUMERIC), 2) as total_sales, dim_date_times.year, dim_date_times.month 
@@ -90,6 +140,7 @@ SELECT
         total_sales DESC LIMIT 10
 
 
+-- Task 7: Staff by Stores
 SELECT 
     SUM(CAST(dim_store_details.staff_numbers AS NUMERIC)) as staff_numbers, dim_store_details.country_code 
     FROM 
@@ -99,7 +150,7 @@ SELECT
     ORDER BY 
         staff_numbers DESC
 
-
+-- Task 8: German Store sales
 SELECT 
     ROUND(CAST(SUM(dim_products.product_price * orders_table.product_quantity) AS NUMERIC), 2) as total_sales, 
     dim_store_details.store_type, 
@@ -117,7 +168,7 @@ SELECT
     ORDER BY 
         total_sales 
 
-
+-- Task 9
 
 WITH date_times AS (
 SELECT
@@ -166,4 +217,20 @@ SELECT year,
 FROM avg_times
 GROUP BY year, avg_times
 ORDER BY avg_times DESC
+LIMIT 5;
+
+
+WITH cte AS(
+    SELECT TO_TIMESTAMP(CONCAT(year, '-', month, '-', day, ' ', timestamp),
+    'YYYY-MM-DD HH24:MI:SS') as datetimes, year FROM dim_date_times
+    ORDER BY datetimes DESC
+), cte2 AS(
+    SELECT 
+        year, 
+        datetimes, 
+        LEAD(datetimes, 1) OVER (ORDER BY datetimes DESC) as time_difference 
+        FROM cte
+) SELECT year, AVG((datetimes - time_difference)) as actual_time_taken FROM cte2
+GROUP BY year
+ORDER BY actual_time_taken DESC
 LIMIT 5;
