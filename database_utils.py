@@ -3,6 +3,7 @@ import pandas as pd
 from sqlalchemy import create_engine
 from decouple import config
 
+print('test')
 CLOUD_CREDS = config('CLOUD_YAML')
 LOCAL_CREDS = config('LOCAL_YAML')
 
