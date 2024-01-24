@@ -88,4 +88,5 @@ if __name__ == '__main__':
         db.upload_to_db(cleaned_dataframe=cleaned_datetime, table_name='dim_date_times', creds=LOCAL_CREDS)
     datetime_run()
     print('All Cleaning Done')
+    print('HI')
 

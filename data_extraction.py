@@ -4,6 +4,7 @@ import tabula
 import requests
 import boto3
 import requests
+from tqdm import tqdm
 import pandas as pd
 import numpy as np
 from io import StringIO
@@ -74,6 +75,7 @@ class DataExtractor:
         """
         cc_df = tabula.read_pdf(filepath, stream=False, pages='all')
         cc_df = pd.concat(cc_df)
+        print(cc_df.head())
         return cc_df
 
     def list_number_of_stores(self, endpoint: str, header: dict):
@@ -171,6 +173,7 @@ if __name__ == '__main__':
     de = DataExtractor()
     table_list = de.list_db_tables(engine=db.engine)
     print(table_list)
+    de.retrieve_pdf_data('https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf')
 
 
 
