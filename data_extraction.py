@@ -37,6 +37,7 @@ class DataExtractor:
         """
         inspector = inspect(engine)
         self.table_list = inspector.get_table_names()
+        print(self.table_list)
         # print(self.table_list)
         # for column in inspector.get_columns(self.table_list):
         #     print("Column: %s" % column['name'])
@@ -74,6 +75,7 @@ class DataExtractor:
         :return: a pandas DataFrame object named cc_df.
         """
         cc_df = tabula.read_pdf(filepath, stream=False, pages='all')
+        print(cc_df[0])
         cc_df = pd.concat(cc_df)
         print(cc_df.head())
         return cc_df

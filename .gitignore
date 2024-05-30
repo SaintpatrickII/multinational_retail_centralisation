@@ -2,3 +2,6 @@
 *.yaml
 **/__pycache__
 *data_cleaning.py
+.vscode
+*.zed
+**.vscode/

@@ -23,7 +23,7 @@ class DatabaseConnector:
         :return: The `self.data` variable is being returned.
         """
         with open(creds, 'r') as file:
-            self.data = yaml.load(file, Loader=yaml.FullLoader)
+            self.data = yaml.load(files, Loader=yaml.FullLoader)
         return self.data
 
     def init_db_engine(self, creds):
@@ -42,6 +42,7 @@ class DatabaseConnector:
         DATABASE = creds['DATABASE']
         PORT = creds['PORT']
         self.engine = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}")
+        print(self.engine)
         print('Database connected')
         return self.engine
 
